@@ -1410,7 +1410,7 @@
     if (action) {
       action.style.display = 'none';
     }
-    if (socialOptions) socialOptions.style.display = canSignIn ? 'grid' : 'none';
+    if (socialOptions) socialOptions.style.display = 'grid';
   }
 
   function applyFarmResponse(result) {
@@ -2287,7 +2287,11 @@
    }
 
    async function startBankrSignIn(provider) {
-     if (!bankrApp || !bankrApp.auth) return;
+     if (!bankrApp || !bankrApp.auth) {
+       var unavailableMessage = document.getElementById('signinMessage');
+       if (unavailableMessage) unavailableMessage.textContent = 'Open MUSEFARM inside Bankr to complete ' + provider + ' sign-in securely.';
+       return;
+     }
      var buttons = [document.getElementById('signinX'), document.getElementById('signinGoogle')].filter(Boolean);
      buttons.forEach(function (button) { button.disabled = true; });
      var messageEl = document.getElementById('signinMessage');

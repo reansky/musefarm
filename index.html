@@ -1655,7 +1655,7 @@
     }
 
     if (state.walletAddress) {
-       var badge = authType === 'injected' ? '🦊 ' : '⚡ ';
+       var badge = authType === 'privy' ? '🔐 ' : (authType === 'injected' ? '🦊 ' : '⚡ ');
       document.getElementById('walletLabel').textContent = badge + shortAddr(state.walletAddress);
       document.getElementById('userHarvestAllocation').textContent = state.totalHarvested + ' MUSE Harvested';
       var farmTokens = (state.totalHarvested || 0) * 2;

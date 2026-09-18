@@ -1345,9 +1345,10 @@
           var wallet = embedded || createdWallet.current;
           if (!wallet && walletState.ready && !createInProgress.current) {
             createInProgress.current = true;
-            walletCreator.createWallet().then(function (created) {
-              createdWallet.current = created;
-              publishState({ ready: true, authenticated: true, user: privy.user, wallet: created });
+              walletCreator.createWallet().then(function (created) {
+               var wallet = created && created.wallet ? created.wallet : created;
+               createdWallet.current = wallet;
+               publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet });
             }).catch(function (error) {
               window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
             }).finally(function () {
@@ -2385,7 +2386,30 @@
     });
   }
 
-   function showPrivyWallet(detail) {
+    function createPrivyShellState(address) {
+      var now = Date.now();
+      var today = new Date(now).toISOString().slice(0, 10);
+      return {
+        walletAddress: address,
+        muse: 0,
+        level: 1,
+        gridSize: 3,
+        stamina: MAX_STAMINA,
+        staminaUpdatedAt: now,
+        freeSeedDate: today,
+        freeSeedClaimedToday: 0,
+        plots: Array.from({ length: 9 }, function (_, index) {
+          return { index: index, state: 'empty', seedType: '', plantedAt: 0 };
+        }),
+        seedInventory: {},
+        harvestInventory: {},
+        totalHarvested: 0,
+        createdAt: now,
+        updatedAt: now
+      };
+    }
+
+    function showPrivyWallet(detail) {
      var gate = document.getElementById('signinGate');
      var workspace = document.getElementById('gameWorkspace');
      var title = document.getElementById('signinTitle');
@@ -2403,17 +2427,21 @@
      privyWallet = detail.wallet;
      userWallet = address;
      authType = 'privy';
-     if (gate) gate.style.display = 'block';
-     if (workspace) workspace.style.display = 'none';
+      if (!state || state.walletAddress !== address) state = createPrivyShellState(address);
+      if (gate) gate.style.display = 'none';
+      if (workspace) workspace.style.display = 'grid';
      if (title) title.textContent = 'Privy Wallet Ready';
      if (message) message.textContent = 'Your X/Google account now has an embedded wallet connected to Base.';
      if (options) options.style.display = 'none';
      if (note) note.textContent = 'This wallet is controlled through your Privy account and can sign on-chain transactions.';
      if (status) status.style.display = 'block';
-     if (addressEl) addressEl.textContent = address;
-     if (explorer) explorer.href = 'https://basescan.org/address/' + address;
-     document.getElementById('walletLabel').textContent = '🔐 ' + shortAddr(address);
-     refreshWalletBalance();
+      if (addressEl) addressEl.textContent = address;
+      if (explorer) explorer.href = 'https://basescan.org/address/' + address;
+      document.getElementById('walletLabel').textContent = '🔐 ' + shortAddr(address);
+      var syncEl = document.getElementById('lastSyncTime');
+      if (syncEl) syncEl.textContent = 'PRIVY WALLET READY';
+      renderAll();
+      refreshWalletBalance();
    }
 
    function handlePrivyState(event) {

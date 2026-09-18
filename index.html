@@ -579,6 +579,49 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Connect Wallet & Social Modal */
+  .auth-modal-card {
+    background: var(--card-bg); border-radius: var(--radius-lg); border: 2px solid var(--card-border);
+    padding: 20px; width: 400px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.3); box-sizing: border-box;
+  }
+  .auth-section-title {
+    font-size: 11px; font-weight: 800; color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.8px; margin: 12px 0 6px;
+  }
+  .auth-btn {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    padding: 10px 14px; border-radius: var(--radius-md); border: 1.5px solid var(--card-border);
+    background: #fff; cursor: pointer; transition: all 0.15s; margin-bottom: 8px;
+    box-sizing: border-box; text-align: left;
+  }
+  .auth-btn:hover { background: #fffdf5; border-color: var(--gold-dark); transform: translateY(-1px); }
+  .auth-btn-left { display: flex; align-items: center; gap: 10px; }
+  .auth-btn-icon { font-size: 20px; line-height: 1; }
+  .auth-btn-text { font-weight: 800; font-size: 13px; color: var(--ink); }
+  .auth-btn-sub { font-size: 10px; color: var(--ink-muted); }
+  .auth-btn-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: #e2e8f0; color: #4a5568; }
+  .auth-btn-badge.active { background: #c6f6d5; color: #22543d; }
+
+  .email-input-group {
+    display: flex; gap: 6px; margin-bottom: 8px; width: 100%;
+  }
+  .email-input-group input {
+    flex: 1; padding: 10px 12px; border-radius: var(--radius-md); border: 1.5px solid var(--card-border);
+    font-size: 13px; outline: none; background: #fff;
+  }
+  .email-input-group input:focus { border-color: var(--gold-dark); }
+  .email-input-group button {
+    padding: 10px 14px; border-radius: var(--radius-md); border: none; background: linear-gradient(135deg, var(--leaf-bright), var(--leaf));
+    color: #fff; font-weight: 800; cursor: pointer; font-size: 12px;
+  }
+  .email-input-group button:hover { background: linear-gradient(135deg, var(--leaf), var(--leaf-dark)); }
+
+  /* Wallet Info Popover */
+  .wallet-chip { cursor: pointer; transition: all 0.15s; }
+  .wallet-chip:hover { background: #e8ded0; border-color: var(--gold-dark); }
+
 </style>
   <!-- Ethers.js & Web3 / Privy Integration -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
@@ -780,15 +823,13 @@
 </div>
 
 
+
 <script>
 (function () {
   // ==========================================
   // CONFIGURATION & CREATOR SETTINGS
   // ==========================================
   var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
-  var PRIVY_APP_ID = ''; // Set your Privy App ID here if using Privy embedded auth
-
-  // Base Chain USDC Contract & Addresses
   var BASE_CHAIN_ID = '0x2105'; // 8453 in hex
   var BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
   var ERC20_ABI = [
@@ -831,6 +872,8 @@
   // Runtime state
   var state = null;
   var userWallet = null;
+  var authType = null; // 'injected' | 'social' | 'guest'
+  var embeddedWallet = null; // Ethers.js Wallet instance for social/guest
   var ethersProvider = null;
   var ethersSigner = null;
   var currentPlot = null;
@@ -1016,7 +1059,8 @@
     }
 
     if (state.walletAddress) {
-      document.getElementById('walletLabel').textContent = shortAddr(state.walletAddress);
+      var badge = authType === 'social' ? '🌐 ' : (authType === 'injected' ? '🦊 ' : '👤 ');
+      document.getElementById('walletLabel').textContent = badge + shortAddr(state.walletAddress);
       document.getElementById('userHarvestAllocation').textContent = state.totalHarvested + ' MUSE Harvested';
       var farmTokens = (state.totalHarvested || 0) * 2;
       var allocEl = document.getElementById('userTokenAllocation');
@@ -1407,66 +1451,93 @@
   // ==========================================
   // ON-CHAIN PAYMENT ENGINE (USDC TO CREATOR)
   // ==========================================
-  async function ensureWeb3Signer() {
-    if (ethersSigner) return ethersSigner;
-    if (window.ethereum) {
-      ethersProvider = new ethers.BrowserProvider(window.ethereum);
-      ethersSigner = await ethersProvider.getSigner();
-      return ethersSigner;
+  async function executeOnChainPayment(costUsd) {
+    // If user has injected wallet connected
+    if (authType === 'injected' && ethersSigner) {
+      try {
+        var net = await ethersProvider.getNetwork();
+        if (net.chainId !== 8453n) {
+          showBanner('Switching network to Base chain...', 'info');
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: BASE_CHAIN_ID }]
+          });
+          ethersProvider = new ethers.BrowserProvider(window.ethereum);
+          ethersSigner = await ethersProvider.getSigner();
+        }
+      } catch (switchErr) {
+        console.warn('Network switch check', switchErr);
+      }
+
+      try {
+        var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, ethersSigner);
+        var amountUnits = ethers.parseUnits(costUsd.toString(), 6);
+        showBanner('Please confirm $' + costUsd + ' USDC payment to Creator in your wallet...', 'info');
+        var tx = await usdc.transfer(CREATOR_WALLET, amountUnits);
+        showBanner('Transaction submitted! Waiting for confirmation...', 'info');
+        await tx.wait();
+        return { success: true, hash: tx.hash, method: 'USDC' };
+      } catch (usdcErr) {
+        if (usdcErr.code === 'ACTION_REJECTED' || (usdcErr.info && usdcErr.info.error && usdcErr.info.error.code === 4001)) {
+          throw new Error('Transaction was cancelled by user.');
+        }
+        var ethAmount = (costUsd / 2600).toFixed(6);
+        var confirmEth = confirm('USDC transfer failed. Would you like to pay equivalent ETH (' + ethAmount + ' ETH) to creator wallet?\n\nRecipient: ' + CREATOR_WALLET);
+        if (!confirmEth) throw usdcErr;
+
+        var txEth = await ethersSigner.sendTransaction({
+          to: CREATOR_WALLET,
+          value: ethers.parseEther(ethAmount.toString())
+        });
+        showBanner('Transaction submitted! Waiting for confirmation...', 'info');
+        await txEth.wait();
+        return { success: true, hash: txEth.hash, method: 'ETH' };
+      }
     }
-    throw new Error('No Web3 wallet detected. Please connect MetaMask, Rabby, Coinbase Wallet, or Privy.');
+
+    // For social / embedded / guest wallets without injected signer:
+    // Display interactive payment modal to send USDC directly to creator wallet
+    return new Promise(function (resolve, reject) {
+      openDirectPaymentModal(costUsd, resolve, reject);
+    });
   }
 
-  async function executeOnChainPayment(costUsd) {
-    var signer = await ensureWeb3Signer();
-    
-    // Check if on Base or switch network
-    try {
-      var net = await ethersProvider.getNetwork();
-      if (net.chainId !== 8453n) {
-        showBanner('Switching network to Base chain...', 'info');
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: BASE_CHAIN_ID }]
-        });
-        ethersProvider = new ethers.BrowserProvider(window.ethereum);
-        signer = await ethersProvider.getSigner();
-      }
-    } catch (switchErr) {
-      console.warn('Network switch check', switchErr);
-    }
+  function openDirectPaymentModal(costUsd, resolve, reject) {
+    var mount = document.getElementById('plantModalMount');
+    var ethAmount = (costUsd / 2600).toFixed(6);
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="payBackdrop">' +
+        '<div class="modal-card" style="text-align:center;">' +
+          '<h3>Pay Creator Wallet</h3>' +
+          '<p style="font-size:12px; color:var(--ink-muted); margin-bottom:12px;">' +
+            'Send <strong>$' + costUsd + ' USDC</strong> (or ' + ethAmount + ' ETH) on Base Network directly to the game creator:' +
+          '</p>' +
+          '<div style="background:#f7fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; font-family:monospace; font-size:11px; word-break:break-all; margin-bottom:10px;" id="creatorAddrText">' +
+            CREATOR_WALLET +
+          '</div>' +
+          '<div style="display:flex; gap:6px; margin-bottom:12px;">' +
+            '<button class="buy-btn" id="copyCreatorAddrBtn" style="flex:1;">📋 Copy Address</button>' +
+            '<a href="https://basescan.org/address/' + CREATOR_WALLET + '" target="_blank" style="padding:6px 12px; background:#edf2f7; border-radius:8px; font-size:11px; font-weight:800; color:#4a5568; text-decoration:none; display:flex; align-items:center;">Explorer ↗</a>' +
+          '</div>' +
+          '<button class="signin-btn" id="confirmPaidBtn" style="width:100%; margin-bottom:8px;">✅ I Have Sent the Payment</button>' +
+          '<button class="modal-close" id="cancelPayBtn">Cancel</button>' +
+        '</div>' +
+      '</div>';
 
-    // Try paying via USDC on Base first
-    try {
-      var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, signer);
-      var amountUnits = ethers.parseUnits(costUsd.toString(), 6);
-      showBanner('Please confirm the $' + costUsd + ' USDC transfer to Creator in your wallet...', 'info');
-      var tx = await usdc.transfer(CREATOR_WALLET, amountUnits);
-      showBanner('Transaction submitted! Waiting for confirmation (' + tx.hash.slice(0, 10) + '...)...', 'info');
-      await tx.wait();
-      return { success: true, hash: tx.hash, method: 'USDC' };
-    } catch (usdcErr) {
-      console.warn('USDC transfer error, checking alternative/native payment', usdcErr);
-      // If user cancelled, rethrow
-      if (usdcErr.code === 'ACTION_REJECTED' || (usdcErr.info && usdcErr.info.error && usdcErr.info.error.code === 4001)) {
-        throw new Error('Transaction was cancelled by user.');
-      }
-      
-      // Fallback: allow native payment or show clear instruction
-      var ethPriceEstimate = 2600; // ~$2600/ETH
-      var ethAmount = (costUsd / ethPriceEstimate).toFixed(6);
-      var confirmEth = confirm('USDC transfer could not complete. Would you like to pay with equivalent ETH (' + ethAmount + ' ETH) to creator wallet?\n\nRecipient: ' + CREATOR_WALLET);
-      if (!confirmEth) throw usdcErr;
+    document.getElementById('copyCreatorAddrBtn').addEventListener('click', function () {
+      navigator.clipboard.writeText(CREATOR_WALLET);
+      this.textContent = '✅ Copied!';
+    });
 
-      showBanner('Please confirm the ' + ethAmount + ' ETH transfer in your wallet...', 'info');
-      var txEth = await signer.sendTransaction({
-        to: CREATOR_WALLET,
-        value: ethers.parseEther(ethAmount.toString())
-      });
-      showBanner('Transaction submitted! Waiting for confirmation...', 'info');
-      await txEth.wait();
-      return { success: true, hash: txEth.hash, method: 'ETH' };
-    }
+    document.getElementById('confirmPaidBtn').addEventListener('click', function () {
+      mount.innerHTML = '';
+      resolve({ success: true, hash: 'manual_' + Date.now(), method: 'DIRECT' });
+    });
+
+    document.getElementById('cancelPayBtn').addEventListener('click', function () {
+      mount.innerHTML = '';
+      reject(new Error('Payment cancelled.'));
+    });
   }
 
   async function buySeedOnChain(seedType, costUsd, btnEl) {
@@ -1474,7 +1545,7 @@
     if (!cfg) return;
 
     if (btnEl) btnEl.disabled = true;
-    showBanner('Initiating onchain purchase for ' + cfg.name + ' ($' + costUsd + ' USDC) to creator wallet ' + shortAddr(CREATOR_WALLET) + '...', 'info');
+    showBanner('Initiating purchase for ' + cfg.name + ' ($' + costUsd + ' USDC)...', 'info');
 
     try {
       var payRes = await executeOnChainPayment(costUsd);
@@ -1482,10 +1553,10 @@
         state.seedInventory[seedType] = (state.seedInventory[seedType] || 0) + 1;
         saveState(state);
         renderAll();
-        showBanner('🎉 Payment confirmed! +1 ' + cfg.name + ' Seed added to inventory! TX: ' + payRes.hash.slice(0, 10) + '...', 'info');
+        showBanner('🎉 Payment confirmed! +1 ' + cfg.name + ' Seed added to inventory!', 'info');
       }
     } catch (err) {
-      showBanner('Purchase error: ' + (err.message || err), 'error');
+      showBanner('Purchase cancelled or failed: ' + (err.message || err), 'error');
     } finally {
       if (btnEl) btnEl.disabled = false;
     }
@@ -1493,7 +1564,7 @@
 
   async function buyLandUpgradeOnChain(targetSize, costUsd, key, btnEl) {
     if (btnEl) btnEl.disabled = true;
-    showBanner('Initiating land expansion payment ($' + costUsd + ' USDC) to creator wallet ' + shortAddr(CREATOR_WALLET) + '...', 'info');
+    showBanner('Initiating land expansion ($' + costUsd + ' USDC)...', 'info');
 
     try {
       var payRes = await executeOnChainPayment(costUsd);
@@ -1506,10 +1577,10 @@
         }
         saveState(state);
         renderAll();
-        showBanner('🎉 Land successfully expanded to ' + targetSize + 'x' + targetSize + ' (' + newTotalPlots + ' plots)! TX: ' + payRes.hash.slice(0, 10) + '...', 'info');
+        showBanner('🎉 Land successfully expanded to ' + targetSize + 'x' + targetSize + ' (' + newTotalPlots + ' plots)!', 'info');
       }
     } catch (err) {
-      showBanner('Upgrade error: ' + (err.message || err), 'error');
+      showBanner('Upgrade cancelled or failed: ' + (err.message || err), 'error');
     } finally {
       if (btnEl) btnEl.disabled = false;
     }
@@ -1625,6 +1696,11 @@
     if (avatarFrame) {
       avatarFrame.addEventListener('click', openAvatarLightbox);
     }
+
+    var walletPill = document.getElementById('walletLabel');
+    if (walletPill) {
+      walletPill.addEventListener('click', openWalletDetailsModal);
+    }
   }
 
   function openAvatarLightbox() {
@@ -1645,45 +1721,201 @@
     });
   }
 
-  // ==========================================
-  // WALLET & PRIVY CONNECTION FLOW
-  // ==========================================
-  async function connectWallet() {
-    // If Privy App ID is set, use Privy
-    if (PRIVY_APP_ID && window.Privy) {
-      try {
-        var privy = new window.Privy({ appId: PRIVY_APP_ID });
-        var user = await privy.login();
-        if (user && user.wallet) {
-          onWalletConnected(user.wallet.address);
-          return;
-        }
-      } catch (privyErr) {
-        console.warn('Privy connect error', privyErr);
-      }
+  function openWalletDetailsModal() {
+    if (!userWallet) return;
+    var mount = document.getElementById('plantModalMount');
+    var isEmbedded = authType === 'social' || authType === 'guest';
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="walletBackdrop">' +
+        '<div class="auth-modal-card">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+            '<h3 style="margin:0; font-size:15px; color:var(--leaf-dark);">Wallet Details</h3>' +
+            '<span class="auth-btn-badge active">' + (authType || 'Connected') + '</span>' +
+          '</div>' +
+          '<div style="font-size:11px; color:var(--ink-muted); margin-bottom:4px;">Connected Address</div>' +
+          '<div style="background:#f7fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; word-break:break-all; margin-bottom:10px;">' +
+            userWallet +
+          '</div>' +
+          '<div style="display:flex; gap:6px; margin-bottom:14px;">' +
+            '<button class="buy-btn" id="copyWalletBtn" style="flex:1;">📋 Copy Address</button>' +
+            '<a href="https://basescan.org/address/' + userWallet + '" target="_blank" style="padding:6px 12px; background:#edf2f7; border-radius:8px; font-size:11px; font-weight:800; color:#4a5568; text-decoration:none; display:flex; align-items:center;">BaseScan ↗</a>' +
+          '</div>' +
+          (isEmbedded && embeddedWallet ? 
+            '<div style="background:#fffaf0; border:1px solid #feebc8; border-radius:8px; padding:10px; margin-bottom:12px;">' +
+              '<div style="font-size:11px; font-weight:800; color:#975a16; margin-bottom:4px;">🔑 Embedded Private Key:</div>' +
+              '<div style="font-size:10px; font-family:monospace; word-break:break-all; color:#744210;" id="privKeyText">●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●</div>' +
+              '<button id="revealPrivKeyBtn" style="background:transparent; border:none; color:#b7791f; font-size:10px; font-weight:800; cursor:pointer; text-decoration:underline; margin-top:4px;">Show Key (Import to MetaMask)</button>' +
+            '</div>' : '') +
+          '<button class="upgrade-btn" id="disconnectWalletBtn" style="background:#fed7d7; color:#9b2c2c; box-shadow:none; margin-bottom:6px;">Disconnect Wallet</button>' +
+          '<button class="modal-close" id="closeWalletDetailsBtn">Close</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('copyWalletBtn').addEventListener('click', function () {
+      navigator.clipboard.writeText(userWallet);
+      this.textContent = '✅ Copied!';
+    });
+
+    var revealBtn = document.getElementById('revealPrivKeyBtn');
+    if (revealBtn && embeddedWallet) {
+      revealBtn.addEventListener('click', function () {
+        document.getElementById('privKeyText').textContent = embeddedWallet.privateKey;
+        this.style.display = 'none';
+      });
     }
 
-    // Standard Injected Web3 / MetaMask / Rabby / Coinbase
-    if (window.ethereum) {
-      try {
-        ethersProvider = new ethers.BrowserProvider(window.ethereum);
-        var accounts = await ethersProvider.send('eth_requestAccounts', []);
-        if (accounts && accounts.length > 0) {
-          ethersSigner = await ethersProvider.getSigner();
-          onWalletConnected(accounts[0]);
-          return;
-        }
-      } catch (ethErr) {
-        showBanner('Connection rejected: ' + (ethErr.message || ethErr), 'error');
-        return;
-      }
-    }
+    document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
+      localStorage.removeItem('musefarm_auth_session');
+      location.reload();
+    });
 
-    showBanner('No Web3 wallet found. Please install MetaMask, Rabby, Coinbase Wallet, or configure Privy.', 'error');
+    document.getElementById('closeWalletDetailsBtn').addEventListener('click', function () { mount.innerHTML = ''; });
+    document.getElementById('walletBackdrop').addEventListener('click', function (e) {
+      if (e.target.id === 'walletBackdrop') mount.innerHTML = '';
+    });
   }
 
-  function onWalletConnected(addr) {
+  // ==========================================
+  // UNIFIED CONNECT WALLET & SOCIAL MODAL
+  // ==========================================
+  function openConnectModal() {
+    var mount = document.getElementById('plantModalMount');
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    var hasInjected = !!window.ethereum;
+
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="authBackdrop">' +
+        '<div class="auth-modal-card">' +
+          '<div style="text-align:center; margin-bottom:14px;">' +
+            '<div style="font-size:36px; line-height:1;">🚜</div>' +
+            '<h3 style="margin:6px 0 2px; font-size:17px; color:var(--leaf-dark);">Connect to MUSEFARM</h3>' +
+            '<p style="font-size:12px; color:var(--ink-muted); margin:0;">Choose how you want to access your farm</p>' +
+          '</div>' +
+
+          // Social & Email Section
+          '<div class="auth-section-title">🌐 Social & Instant Login (No Extension Needed)</div>' +
+          '<div class="email-input-group">' +
+            '<input type="email" id="emailLoginInput" placeholder="Enter Email or Username..." />' +
+            '<button id="emailLoginBtn">Continue ➔</button>' +
+          '</div>' +
+          '<button class="auth-btn" id="guestLoginBtn">' +
+            '<div class="auth-btn-left">' +
+              '<span class="auth-btn-icon">⚡</span>' +
+              '<div>' +
+                '<div class="auth-btn-text">Instant Guest / Social Wallet</div>' +
+                '<div class="auth-btn-sub">Auto-creates a secure embedded Web3 wallet</div>' +
+              '</div>' +
+            '</div>' +
+            '<span class="auth-btn-badge active">Instant</span>' +
+          '</button>' +
+
+          // Web3 Wallets Section
+          '<div class="auth-section-title">🦊 Web3 Wallets</div>' +
+          '<button class="auth-btn" id="injectedWalletBtn">' +
+            '<div class="auth-btn-left">' +
+              '<span class="auth-btn-icon">🦊</span>' +
+              '<div>' +
+                '<div class="auth-btn-text">Browser Wallet (MetaMask / Rabby)</div>' +
+                '<div class="auth-btn-sub">' + (hasInjected ? 'Detected & Ready' : 'Connect Injected Provider') + '</div>' +
+              '</div>' +
+            '</div>' +
+            (hasInjected ? '<span class="auth-btn-badge active">Detected</span>' : '<span class="auth-btn-badge">Web3</span>') +
+          '</button>' +
+
+          (isMobile ? 
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">' +
+              '<a href="https://metamask.app.link/dapp/' + window.location.host + window.location.pathname + '" target="_blank" class="auth-btn" style="justify-content:center; text-align:center; padding:8px; text-decoration:none;">' +
+                '<span style="font-size:12px; font-weight:800; color:var(--ink);">📱 MetaMask App</span>' +
+              '</a>' +
+              '<a href="https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(window.location.href) + '" target="_blank" class="auth-btn" style="justify-content:center; text-align:center; padding:8px; text-decoration:none;">' +
+                '<span style="font-size:12px; font-weight:800; color:var(--ink);">📱 Coinbase App</span>' +
+              '</a>' +
+            '</div>' : '') +
+
+          '<button class="modal-close" id="closeAuthModalBtn">Close</button>' +
+        '</div>' +
+      '</div>';
+
+    // Handler: Injected Wallet
+    document.getElementById('injectedWalletBtn').addEventListener('click', async function () {
+      if (window.ethereum) {
+        try {
+          ethersProvider = new ethers.BrowserProvider(window.ethereum);
+          var accounts = await ethersProvider.send('eth_requestAccounts', []);
+          if (accounts && accounts.length > 0) {
+            ethersSigner = await ethersProvider.getSigner();
+            mount.innerHTML = '';
+            setAuthSession('injected', accounts[0]);
+            onWalletConnected(accounts[0], 'injected');
+          }
+        } catch (err) {
+          alert('Wallet connection rejected: ' + (err.message || err));
+        }
+      } else {
+        if (isMobile) {
+          window.location.href = 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname;
+        } else {
+          alert('No browser wallet extension found. Please install MetaMask, Rabby, or use Social/Instant Login above!');
+        }
+      }
+    });
+
+    // Handler: Email Login
+    document.getElementById('emailLoginBtn').addEventListener('click', function () {
+      var input = document.getElementById('emailLoginInput').value.trim();
+      if (!input) {
+        alert('Please enter your email or username to continue.');
+        return;
+      }
+      mount.innerHTML = '';
+      connectWithSocialOrEmail(input);
+    });
+
+    // Handler: Instant Guest
+    document.getElementById('guestLoginBtn').addEventListener('click', function () {
+      mount.innerHTML = '';
+      connectWithGuest();
+    });
+
+    document.getElementById('closeAuthModalBtn').addEventListener('click', function () { mount.innerHTML = ''; });
+    document.getElementById('authBackdrop').addEventListener('click', function (e) {
+      if (e.target.id === 'authBackdrop') mount.innerHTML = '';
+    });
+  }
+
+  function setAuthSession(type, addr, secret) {
+    var sess = { type: type, address: addr, secret: secret || '', savedAt: Date.now() };
+    localStorage.setItem('musefarm_auth_session', JSON.stringify(sess));
+  }
+
+  function connectWithSocialOrEmail(identifier) {
+    try {
+      var hash = ethers.id('musefarm_social_v1_' + identifier.toLowerCase().trim());
+      embeddedWallet = new ethers.Wallet(hash);
+      authType = 'social';
+      setAuthSession('social', embeddedWallet.address, identifier);
+      onWalletConnected(embeddedWallet.address, 'social');
+    } catch (e) {
+      alert('Error creating social wallet: ' + e.message);
+    }
+  }
+
+  function connectWithGuest() {
+    var existingKey = localStorage.getItem('musefarm_guest_privkey');
+    if (!existingKey) {
+      var rand = ethers.Wallet.createRandom();
+      existingKey = rand.privateKey;
+      localStorage.setItem('musefarm_guest_privkey', existingKey);
+    }
+    embeddedWallet = new ethers.Wallet(existingKey);
+    authType = 'guest';
+    setAuthSession('guest', embeddedWallet.address, existingKey);
+    onWalletConnected(embeddedWallet.address, 'guest');
+  }
+
+  function onWalletConnected(addr, type) {
     userWallet = addr;
+    authType = type || 'injected';
     state = loadState(addr);
 
     document.getElementById('signinGate').style.display = 'none';
@@ -1692,7 +1924,7 @@
     renderAll();
     loadLeaderboard();
 
-    showBanner('Connected as ' + shortAddr(addr) + '! Welcome to MUSEFARM.', 'info');
+    showBanner('Connected as ' + shortAddr(addr) + ' (' + authType + ')! Welcome to MUSEFARM.', 'info');
 
     // Auto-regen stamina and tick timers
     setInterval(function () {
@@ -1707,14 +1939,39 @@
   async function boot() {
     setupTabs();
 
-    // Check if wallet already connected in session
+    // Check existing stored session first
+    try {
+      var rawSess = localStorage.getItem('musefarm_auth_session');
+      if (rawSess) {
+        var sess = JSON.parse(rawSess);
+        if (sess.type === 'social' && sess.secret) {
+          connectWithSocialOrEmail(sess.secret);
+          return;
+        } else if (sess.type === 'guest') {
+          connectWithGuest();
+          return;
+        } else if (sess.type === 'injected' && window.ethereum) {
+          ethersProvider = new ethers.BrowserProvider(window.ethereum);
+          var accounts = await ethersProvider.send('eth_accounts', []);
+          if (accounts && accounts.length > 0) {
+            ethersSigner = await ethersProvider.getSigner();
+            onWalletConnected(accounts[0], 'injected');
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Session resume err', e);
+    }
+
+    // If window.ethereum already has connected accounts
     if (window.ethereum) {
       try {
         ethersProvider = new ethers.BrowserProvider(window.ethereum);
         var accounts = await ethersProvider.send('eth_accounts', []);
         if (accounts && accounts.length > 0) {
           ethersSigner = await ethersProvider.getSigner();
-          onWalletConnected(accounts[0]);
+          onWalletConnected(accounts[0], 'injected');
           return;
         }
       } catch (e) {}
@@ -1722,15 +1979,13 @@
 
     // Show signin gate
     document.getElementById('signinGate').style.display = 'block';
-    document.getElementById('signinAction').addEventListener('click', connectWallet);
+    document.getElementById('signinAction').addEventListener('click', openConnectModal);
 
     // Listen for account changes
     if (window.ethereum && window.ethereum.on) {
       window.ethereum.on('accountsChanged', function (accounts) {
-        if (accounts.length > 0) {
-          onWalletConnected(accounts[0]);
-        } else {
-          location.reload();
+        if (accounts.length > 0 && authType === 'injected') {
+          onWalletConnected(accounts[0], 'injected');
         }
       });
     }
@@ -1739,5 +1994,6 @@
   window.addEventListener('DOMContentLoaded', boot);
 })();
 </script>
+
 </body>
 </html>

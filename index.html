@@ -518,6 +518,8 @@
       grid-template-columns: 1fr;
       gap: 10px;
     }
+    .layout > .card { min-width: 0; }
+    .tab-nav { min-width: 0; max-width: 100%; }
 
     /* Symmetrical Farmer Profile Card on Mobile */
     .farmer-body {
@@ -580,7 +582,7 @@
     }
   }
 
-  /* Connect Wallet & Social Modal */
+  /* Connect Wallet Modal */
   .auth-modal-card {
     background: var(--card-bg); border-radius: var(--radius-lg); border: 2px solid var(--card-border);
     padding: 20px; width: 400px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
@@ -604,26 +606,46 @@
   .auth-btn-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: #e2e8f0; color: #4a5568; }
   .auth-btn-badge.active { background: #c6f6d5; color: #22543d; }
 
-  .email-input-group {
-    display: flex; gap: 6px; margin-bottom: 8px; width: 100%;
-  }
-  .email-input-group input {
-    flex: 1; padding: 10px 12px; border-radius: var(--radius-md); border: 1.5px solid var(--card-border);
-    font-size: 13px; outline: none; background: #fff;
-  }
-  .email-input-group input:focus { border-color: var(--gold-dark); }
-  .email-input-group button {
-    padding: 10px 14px; border-radius: var(--radius-md); border: none; background: linear-gradient(135deg, var(--leaf-bright), var(--leaf));
-    color: #fff; font-weight: 800; cursor: pointer; font-size: 12px;
-  }
-  .email-input-group button:hover { background: linear-gradient(135deg, var(--leaf), var(--leaf-dark)); }
-
   /* Wallet Info Popover */
   .wallet-chip { cursor: pointer; transition: all 0.15s; }
   .wallet-chip:hover { background: #e8ded0; border-color: var(--gold-dark); }
 
+  /* Wallet menu */
+  .wallet-panel { display: flex; flex-direction: column; gap: 10px; }
+  .wallet-summary {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .wallet-balance {
+    background: #fff; border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
+    padding: 10px; min-width: 0;
+  }
+  .wallet-balance-label { font-size: 10px; color: var(--ink-muted); font-weight: 700; }
+  .wallet-balance-value { font-size: 16px; color: var(--leaf-dark); font-weight: 900; margin-top: 3px; word-break: break-word; }
+  .wallet-address-box {
+    background: #f7fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm);
+    padding: 9px; font-family: monospace; font-size: 10px; word-break: break-all; color: var(--ink);
+  }
+  .wallet-action-row { display: flex; gap: 6px; }
+  .wallet-action-row button { flex: 1; }
+  .wallet-form {
+    background: #fff; border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
+    padding: 10px; display: flex; flex-direction: column; gap: 7px;
+  }
+  .wallet-form h4 { font-size: 12px; color: var(--leaf-dark); }
+  .wallet-form label { font-size: 10px; color: var(--ink-muted); font-weight: 700; }
+  .wallet-form input, .wallet-form select {
+    width: 100%; padding: 8px 9px; border-radius: var(--radius-sm); border: 1.5px solid var(--card-border);
+    font-size: 12px; outline: none; background: #fff;
+  }
+  .wallet-form input:focus, .wallet-form select:focus { border-color: var(--gold-dark); }
+  .wallet-help { font-size: 10px; line-height: 1.45; color: var(--ink-muted); }
+  .wallet-network { font-size: 10px; font-weight: 800; color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; padding: 3px 7px; border-radius: 12px; }
+  @media (max-width: 359px) {
+    .wallet-summary { grid-template-columns: 1fr; }
+  }
+
 </style>
-  <!-- Ethers.js & Web3 / Privy Integration -->
+  <!-- Ethers.js Web3 integration -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
 </head>
 <body>
@@ -638,7 +660,7 @@
         </div>
         <div class="badges-row">
           <span class="badge-rh">ROBINHOOD CHAIN</span>
-          <span class="badge-rail">Web3 & Privy Enabled</span>
+           <span class="badge-rail">Web3 Wallet Enabled</span>
         </div>
       </div>
     </div>
@@ -655,7 +677,7 @@
     <div class="card signin-panel" id="signinGate" style="display:none;">
       <div style="font-size:48px;">🚜</div>
       <h2>Connect to MUSEFARM</h2>
-      <p>Connect your wallet (MetaMask, Rabby, Coinbase Wallet, or Privy) to enter your farm.</p>
+       <p>Connect your wallet (MetaMask, Rabby, Coinbase Wallet, or a guest wallet) to enter your farm.</p>
       <button class="signin-btn" id="signinAction">Enter Farm</button>
     </div>
 
@@ -708,7 +730,7 @@
         </div>
       </div>
 
-      <!-- Center Column: Farm Grid -->
+       <!-- Center Column: Farm Grid -->
       <div class="card farm-container">
         <div class="farm-header-wrap">
           <div class="farm-title-row">
@@ -729,17 +751,64 @@
         </div>
       </div>
 
-      <!-- Right Column: Tabs (Shop / Seed Upgrade / Land Upgrade / Leaderboard / Treasury) -->
-      <div class="card">
-        <div class="tab-nav">
-          <button class="tab-btn active" data-tab="shop">Seed Shop</button>
+       <!-- Right Column: Tabs (Wallet / Shop / Seed Upgrade / Land Upgrade / Leaderboard / Treasury) -->
+       <div class="card">
+         <div class="tab-nav">
+           <button class="tab-btn" data-tab="wallet">Wallet</button>
+           <button class="tab-btn active" data-tab="shop">Seed Shop</button>
           <button class="tab-btn" data-tab="synthesis">✨ Seed Upgrade</button>
           <button class="tab-btn" data-tab="upgrade">Land Upgrade</button>
           <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
           <button class="tab-btn" data-tab="treasury">Rewards & $MUSEFARM</button>
-        </div>
+         </div>
 
-        <!-- Shop Tab -->
+         <!-- Wallet Tab -->
+         <div id="tabWallet" style="display:none;">
+           <div class="wallet-panel">
+             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+               <span style="font-size:11px; color:var(--ink-muted);">Non-custodial wallet on Base</span>
+               <span class="wallet-network">BASE</span>
+             </div>
+
+             <div class="wallet-summary">
+               <div class="wallet-balance">
+                 <div class="wallet-balance-label">Native balance</div>
+                 <div class="wallet-balance-value" id="walletNativeBalance">-- ETH</div>
+               </div>
+               <div class="wallet-balance">
+                 <div class="wallet-balance-label">USDC balance</div>
+                 <div class="wallet-balance-value" id="walletUsdcBalance">-- USDC</div>
+               </div>
+             </div>
+
+             <div class="wallet-form">
+               <h4>Deposit</h4>
+               <div class="wallet-help">Kirim ETH atau USDC di jaringan Base ke alamat ini. Deposit masuk langsung ke wallet yang terhubung.</div>
+               <div class="wallet-address-box" id="walletDepositAddress">--</div>
+               <div class="wallet-action-row">
+                 <button class="buy-btn" id="copyDepositAddressBtn">Copy Address</button>
+                 <button class="modal-close" id="refreshWalletBtn" style="margin-top:0;">Refresh</button>
+               </div>
+             </div>
+
+             <div class="wallet-form">
+               <h4>Withdraw</h4>
+               <label for="withdrawAsset">Asset</label>
+               <select id="withdrawAsset">
+                 <option value="USDC">USDC</option>
+                 <option value="ETH">ETH</option>
+               </select>
+               <label for="withdrawAmount">Amount</label>
+               <input id="withdrawAmount" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+               <label for="withdrawDestination">Destination address</label>
+               <input id="withdrawDestination" inputmode="text" placeholder="0x..." autocomplete="off" />
+               <button class="upgrade-btn" id="withdrawBtn">Withdraw</button>
+               <div class="wallet-help">Withdrawal membutuhkan konfirmasi wallet dan biaya gas. Periksa jaringan serta alamat sebelum menyetujui transaksi.</div>
+             </div>
+           </div>
+         </div>
+
+         <!-- Shop Tab -->
         <div id="tabShop">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
             Free Wheat capped at <strong>10x per day</strong>. Premium seeds are <strong>permanent & reusable</strong> (seed returns to your inventory on harvest so you can replant forever!) and settle via <strong>x402 USDC on Base</strong>.
@@ -829,9 +898,10 @@
   // ==========================================
   // CONFIGURATION & CREATOR SETTINGS
   // ==========================================
-  var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
-  var BASE_CHAIN_ID = '0x2105'; // 8453 in hex
-  var BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+   var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
+   var BASE_CHAIN_ID = '0x2105'; // 8453 in hex
+   var BASE_RPC_URL = 'https://mainnet.base.org';
+   var BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
   var ERC20_ABI = [
     'function transfer(address to, uint256 amount) returns (bool)',
     'function balanceOf(address owner) view returns (uint256)',
@@ -870,13 +940,15 @@
   var DAILY_FREE_SEED_CAP = 10;
 
   // Runtime state
-  var state = null;
-  var userWallet = null;
-  var authType = null; // 'injected' | 'social' | 'guest'
-  var embeddedWallet = null; // Ethers.js Wallet instance for social/guest
-  var ethersProvider = null;
-  var ethersSigner = null;
-  var currentPlot = null;
+   var state = null;
+   var userWallet = null;
+   var authType = null; // 'injected' | 'guest'
+   var embeddedWallet = null; // Ethers.js Wallet instance for guest wallet
+   var ethersProvider = null;
+   var ethersSigner = null;
+   var baseReadProvider = null;
+   var walletBalances = { native: '--', usdc: '--' };
+   var currentPlot = null;
 
   // ==========================================
   // HELPERS
@@ -1059,14 +1131,23 @@
     }
 
     if (state.walletAddress) {
-      var badge = authType === 'social' ? '🌐 ' : (authType === 'injected' ? '🦊 ' : '👤 ');
+       var badge = authType === 'injected' ? '🦊 ' : '⚡ ';
       document.getElementById('walletLabel').textContent = badge + shortAddr(state.walletAddress);
       document.getElementById('userHarvestAllocation').textContent = state.totalHarvested + ' MUSE Harvested';
       var farmTokens = (state.totalHarvested || 0) * 2;
       var allocEl = document.getElementById('userTokenAllocation');
       if (allocEl) allocEl.textContent = '≈ ' + farmTokens.toLocaleString() + ' $MUSEFARM (1:2 Rate)';
-    }
-  }
+     }
+   }
+
+   function renderWallet() {
+     var addressEl = document.getElementById('walletDepositAddress');
+     var nativeEl = document.getElementById('walletNativeBalance');
+     var usdcEl = document.getElementById('walletUsdcBalance');
+     if (addressEl) addressEl.textContent = userWallet || '--';
+     if (nativeEl) nativeEl.textContent = walletBalances.native + ' ETH';
+     if (usdcEl) usdcEl.textContent = walletBalances.usdc + ' USDC';
+   }
 
   function renderPlots() {
     if (!state) return;
@@ -1281,15 +1362,112 @@
     });
   }
 
-  function renderAll() {
-    renderProfile();
-    renderPlots();
-    renderShop();
-    renderSynthesis();
-    renderUpgrades();
-  }
+   function renderAll() {
+     renderProfile();
+     renderPlots();
+     renderShop();
+     renderSynthesis();
+     renderUpgrades();
+     renderWallet();
+   }
 
-  // ==========================================
+   async function refreshWalletBalance() {
+     if (!userWallet) return;
+     var nativeEl = document.getElementById('walletNativeBalance');
+     var usdcEl = document.getElementById('walletUsdcBalance');
+     if (nativeEl) nativeEl.textContent = 'Loading...';
+     if (usdcEl) usdcEl.textContent = 'Loading...';
+
+     try {
+       if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+       var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, baseReadProvider);
+       var results = await Promise.all([
+         baseReadProvider.getBalance(userWallet),
+         usdc.balanceOf(userWallet)
+       ]);
+       walletBalances.native = Number(ethers.formatEther(results[0])).toFixed(5);
+       walletBalances.usdc = Number(ethers.formatUnits(results[1], 6)).toFixed(2);
+     } catch (err) {
+       walletBalances.native = '--';
+       walletBalances.usdc = '--';
+       showBanner('Unable to load Base wallet balance. Try Refresh again.', 'error');
+     }
+     renderWallet();
+   }
+
+   async function switchToBaseNetwork() {
+     if (authType !== 'injected' || !window.ethereum) return;
+     if (!ethersProvider) ethersProvider = new ethers.BrowserProvider(window.ethereum);
+     var net = await ethersProvider.getNetwork();
+     if (net.chainId !== 8453n) {
+       await window.ethereum.request({
+         method: 'wallet_switchEthereumChain',
+         params: [{ chainId: BASE_CHAIN_ID }]
+       });
+     }
+     ethersProvider = new ethers.BrowserProvider(window.ethereum);
+     ethersSigner = await ethersProvider.getSigner();
+   }
+
+   async function withdrawFromWallet() {
+     var assetEl = document.getElementById('withdrawAsset');
+     var amountEl = document.getElementById('withdrawAmount');
+     var destinationEl = document.getElementById('withdrawDestination');
+     var asset = assetEl ? assetEl.value : 'USDC';
+     var amount = amountEl ? amountEl.value.trim() : '';
+     var destination = destinationEl ? destinationEl.value.trim() : '';
+
+     if (!userWallet) {
+       showBanner('Connect a wallet before withdrawing.', 'error');
+       return;
+     }
+     if (!amount || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+       showBanner('Enter a valid withdrawal amount.', 'error');
+       return;
+     }
+     if (!ethers.isAddress(destination)) {
+       showBanner('Enter a valid destination wallet address.', 'error');
+       return;
+     }
+
+     var btn = document.getElementById('withdrawBtn');
+     if (btn) btn.disabled = true;
+     showBanner('Preparing ' + asset + ' withdrawal on Base...', 'info');
+
+     try {
+       var signer;
+       if (authType === 'injected') {
+         await switchToBaseNetwork();
+         signer = ethersSigner;
+       } else if (authType === 'guest' && embeddedWallet) {
+         if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+         signer = embeddedWallet.connect(baseReadProvider);
+       } else {
+         throw new Error('No wallet signer available.');
+       }
+
+       var tx;
+       if (asset === 'USDC') {
+         var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, signer);
+         tx = await usdc.transfer(destination, ethers.parseUnits(amount, 6));
+       } else {
+         tx = await signer.sendTransaction({ to: destination, value: ethers.parseEther(amount) });
+       }
+       showBanner('Withdrawal submitted. Waiting for confirmation...', 'info');
+       await tx.wait();
+       if (amountEl) amountEl.value = '';
+       if (destinationEl) destinationEl.value = '';
+       showBanner('Withdrawal confirmed on Base: ' + tx.hash.slice(0, 12) + '...', 'info');
+       refreshWalletBalance();
+     } catch (err) {
+       var message = err && err.code === 'ACTION_REJECTED' ? 'Transaction cancelled by user.' : (err.message || err);
+       showBanner('Withdrawal failed: ' + message, 'error');
+     } finally {
+       if (btn) btn.disabled = false;
+     }
+   }
+
+   // ==========================================
   // GAMEPLAY LOGIC
   // ==========================================
   function handlePlotClick(plot) {
@@ -1495,7 +1673,7 @@
       }
     }
 
-    // For social / embedded / guest wallets without injected signer:
+    // Guest wallets sign locally and broadcast through the Base RPC provider.
     // Display interactive payment modal to send USDC directly to creator wallet
     return new Promise(function (resolve, reject) {
       openDirectPaymentModal(costUsd, resolve, reject);
@@ -1659,17 +1837,22 @@
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        var target = btn.getAttribute('data-tab');
-        document.getElementById('tabShop').style.display = target === 'shop' ? 'block' : 'none';
+         btn.classList.add('active');
+         var target = btn.getAttribute('data-tab');
+         document.getElementById('tabWallet').style.display = target === 'wallet' ? 'block' : 'none';
+         document.getElementById('tabShop').style.display = target === 'shop' ? 'block' : 'none';
         document.getElementById('tabSynthesis').style.display = target === 'synthesis' ? 'block' : 'none';
         document.getElementById('tabUpgrade').style.display = target === 'upgrade' ? 'block' : 'none';
         document.getElementById('tabLeaderboard').style.display = target === 'leaderboard' ? 'block' : 'none';
         document.getElementById('tabTreasury').style.display = target === 'treasury' ? 'block' : 'none';
-        if (target === 'synthesis') renderSynthesis();
-        if (target === 'upgrade') renderUpgrades();
-        if (target === 'leaderboard') loadLeaderboard();
-      });
+         if (target === 'synthesis') renderSynthesis();
+         if (target === 'upgrade') renderUpgrades();
+         if (target === 'leaderboard') loadLeaderboard();
+         if (target === 'wallet') {
+           renderWallet();
+           refreshWalletBalance();
+         }
+       });
     });
 
     var quickUpgradeBtn = document.getElementById('quickUpgradeBtn');
@@ -1677,8 +1860,9 @@
       quickUpgradeBtn.addEventListener('click', function () {
         document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
         var upTab = document.querySelector('.tab-btn[data-tab="upgrade"]');
-        if (upTab) upTab.classList.add('active');
-        document.getElementById('tabShop').style.display = 'none';
+         if (upTab) upTab.classList.add('active');
+         document.getElementById('tabWallet').style.display = 'none';
+         document.getElementById('tabShop').style.display = 'none';
         document.getElementById('tabSynthesis').style.display = 'none';
         document.getElementById('tabUpgrade').style.display = 'block';
         document.getElementById('tabLeaderboard').style.display = 'none';
@@ -1688,9 +1872,25 @@
     }
 
     var lbBtn = document.getElementById('refreshLbBtn');
-    if (lbBtn) {
-      lbBtn.addEventListener('click', function () { loadLeaderboard(true); });
-    }
+     if (lbBtn) {
+       lbBtn.addEventListener('click', function () { loadLeaderboard(true); });
+     }
+
+     var copyDepositBtn = document.getElementById('copyDepositAddressBtn');
+     if (copyDepositBtn) {
+       copyDepositBtn.addEventListener('click', function () {
+         if (!userWallet) return;
+         navigator.clipboard.writeText(userWallet);
+         copyDepositBtn.textContent = 'Copied!';
+         setTimeout(function () { copyDepositBtn.textContent = 'Copy Address'; }, 1500);
+       });
+     }
+
+     var refreshWalletBtn = document.getElementById('refreshWalletBtn');
+     if (refreshWalletBtn) refreshWalletBtn.addEventListener('click', refreshWalletBalance);
+
+     var withdrawBtn = document.getElementById('withdrawBtn');
+     if (withdrawBtn) withdrawBtn.addEventListener('click', withdrawFromWallet);
 
     var avatarFrame = document.getElementById('farmerAvatarFrame');
     if (avatarFrame) {
@@ -1721,11 +1921,10 @@
     });
   }
 
-  function openWalletDetailsModal() {
-    if (!userWallet) return;
-    var mount = document.getElementById('plantModalMount');
-    var isEmbedded = authType === 'social' || authType === 'guest';
-    mount.innerHTML =
+   function openWalletDetailsModal() {
+     if (!userWallet) return;
+     var mount = document.getElementById('plantModalMount');
+     mount.innerHTML =
       '<div class="modal-backdrop" id="walletBackdrop">' +
         '<div class="auth-modal-card">' +
           '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
@@ -1740,13 +1939,9 @@
             '<button class="buy-btn" id="copyWalletBtn" style="flex:1;">📋 Copy Address</button>' +
             '<a href="https://basescan.org/address/' + userWallet + '" target="_blank" style="padding:6px 12px; background:#edf2f7; border-radius:8px; font-size:11px; font-weight:800; color:#4a5568; text-decoration:none; display:flex; align-items:center;">BaseScan ↗</a>' +
           '</div>' +
-          (isEmbedded && embeddedWallet ? 
-            '<div style="background:#fffaf0; border:1px solid #feebc8; border-radius:8px; padding:10px; margin-bottom:12px;">' +
-              '<div style="font-size:11px; font-weight:800; color:#975a16; margin-bottom:4px;">🔑 Embedded Private Key:</div>' +
-              '<div style="font-size:10px; font-family:monospace; word-break:break-all; color:#744210;" id="privKeyText">●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●</div>' +
-              '<button id="revealPrivKeyBtn" style="background:transparent; border:none; color:#b7791f; font-size:10px; font-weight:800; cursor:pointer; text-decoration:underline; margin-top:4px;">Show Key (Import to MetaMask)</button>' +
-            '</div>' : '') +
-          '<button class="upgrade-btn" id="disconnectWalletBtn" style="background:#fed7d7; color:#9b2c2c; box-shadow:none; margin-bottom:6px;">Disconnect Wallet</button>' +
+           (authType === 'guest' ?
+             '<div style="background:#fffaf0; border:1px solid #feebc8; border-radius:8px; padding:10px; margin-bottom:12px; font-size:10px; color:#744210;">⚡ Guest wallet is stored in this browser. Do not clear browser data until you have moved your funds.</div>' : '') +
+           '<button class="upgrade-btn" id="disconnectWalletBtn" style="background:#fed7d7; color:#9b2c2c; box-shadow:none; margin-bottom:6px;">Disconnect Wallet</button>' +
           '<button class="modal-close" id="closeWalletDetailsBtn">Close</button>' +
         '</div>' +
       '</div>';
@@ -1756,15 +1951,7 @@
       this.textContent = '✅ Copied!';
     });
 
-    var revealBtn = document.getElementById('revealPrivKeyBtn');
-    if (revealBtn && embeddedWallet) {
-      revealBtn.addEventListener('click', function () {
-        document.getElementById('privKeyText').textContent = embeddedWallet.privateKey;
-        this.style.display = 'none';
-      });
-    }
-
-    document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
+     document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
       localStorage.removeItem('musefarm_auth_session');
       location.reload();
     });
@@ -1776,7 +1963,7 @@
   }
 
   // ==========================================
-  // UNIFIED CONNECT WALLET & SOCIAL MODAL
+   // CONNECT WALLET MODAL
   // ==========================================
   function openConnectModal() {
     var mount = document.getElementById('plantModalMount');
@@ -1789,22 +1976,18 @@
           '<div style="text-align:center; margin-bottom:14px;">' +
             '<div style="font-size:36px; line-height:1;">🚜</div>' +
             '<h3 style="margin:6px 0 2px; font-size:17px; color:var(--leaf-dark);">Connect to MUSEFARM</h3>' +
-            '<p style="font-size:12px; color:var(--ink-muted); margin:0;">Choose how you want to access your farm</p>' +
-          '</div>' +
+           '<p style="font-size:12px; color:var(--ink-muted); margin:0;">Choose a wallet to access your farm</p>' +
+           '</div>' +
 
-          // Social & Email Section
-          '<div class="auth-section-title">🌐 Social & Instant Login (No Extension Needed)</div>' +
-          '<div class="email-input-group">' +
-            '<input type="email" id="emailLoginInput" placeholder="Enter Email or Username..." />' +
-            '<button id="emailLoginBtn">Continue ➔</button>' +
-          '</div>' +
-          '<button class="auth-btn" id="guestLoginBtn">' +
-            '<div class="auth-btn-left">' +
-              '<span class="auth-btn-icon">⚡</span>' +
-              '<div>' +
-                '<div class="auth-btn-text">Instant Guest / Social Wallet</div>' +
-                '<div class="auth-btn-sub">Auto-creates a secure embedded Web3 wallet</div>' +
-              '</div>' +
+           // Guest Wallet Section
+           '<div class="auth-section-title">⚡ Guest Wallet (No Extension Needed)</div>' +
+           '<button class="auth-btn" id="guestLoginBtn">' +
+             '<div class="auth-btn-left">' +
+               '<span class="auth-btn-icon">⚡</span>' +
+               '<div>' +
+                 '<div class="auth-btn-text">Create Guest Wallet</div>' +
+                 '<div class="auth-btn-sub">Creates a random wallet stored locally in this browser</div>' +
+               '</div>' +
             '</div>' +
             '<span class="auth-btn-badge active">Instant</span>' +
           '</button>' +
@@ -1855,20 +2038,9 @@
         if (isMobile) {
           window.location.href = 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname;
         } else {
-          alert('No browser wallet extension found. Please install MetaMask, Rabby, or use Social/Instant Login above!');
+          alert('No browser wallet extension found. Please install MetaMask, Rabby, or use the Guest Wallet option.');
         }
       }
-    });
-
-    // Handler: Email Login
-    document.getElementById('emailLoginBtn').addEventListener('click', function () {
-      var input = document.getElementById('emailLoginInput').value.trim();
-      if (!input) {
-        alert('Please enter your email or username to continue.');
-        return;
-      }
-      mount.innerHTML = '';
-      connectWithSocialOrEmail(input);
     });
 
     // Handler: Instant Guest
@@ -1888,19 +2060,7 @@
     localStorage.setItem('musefarm_auth_session', JSON.stringify(sess));
   }
 
-  function connectWithSocialOrEmail(identifier) {
-    try {
-      var hash = ethers.id('musefarm_social_v1_' + identifier.toLowerCase().trim());
-      embeddedWallet = new ethers.Wallet(hash);
-      authType = 'social';
-      setAuthSession('social', embeddedWallet.address, identifier);
-      onWalletConnected(embeddedWallet.address, 'social');
-    } catch (e) {
-      alert('Error creating social wallet: ' + e.message);
-    }
-  }
-
-  function connectWithGuest() {
+   function connectWithGuest() {
     var existingKey = localStorage.getItem('musefarm_guest_privkey');
     if (!existingKey) {
       var rand = ethers.Wallet.createRandom();
@@ -1921,10 +2081,11 @@
     document.getElementById('signinGate').style.display = 'none';
     document.getElementById('gameWorkspace').style.display = 'grid';
 
-    renderAll();
-    loadLeaderboard();
+     renderAll();
+     loadLeaderboard();
+     refreshWalletBalance();
 
-    showBanner('Connected as ' + shortAddr(addr) + ' (' + authType + ')! Welcome to MUSEFARM.', 'info');
+     showBanner('Connected as ' + shortAddr(addr) + ' (' + authType + ')! Welcome to MUSEFARM.', 'info');
 
     // Auto-regen stamina and tick timers
     setInterval(function () {
@@ -1941,15 +2102,15 @@
 
     // Check existing stored session first
     try {
-      var rawSess = localStorage.getItem('musefarm_auth_session');
-      if (rawSess) {
-        var sess = JSON.parse(rawSess);
-        if (sess.type === 'social' && sess.secret) {
-          connectWithSocialOrEmail(sess.secret);
-          return;
-        } else if (sess.type === 'guest') {
-          connectWithGuest();
-          return;
+       var rawSess = localStorage.getItem('musefarm_auth_session');
+       if (rawSess) {
+         var sess = JSON.parse(rawSess);
+         if (sess.type === 'social') {
+           // Remove sessions created by the retired email login flow.
+           localStorage.removeItem('musefarm_auth_session');
+         } else if (sess.type === 'guest') {
+           connectWithGuest();
+           return;
         } else if (sess.type === 'injected' && window.ethereum) {
           ethersProvider = new ethers.BrowserProvider(window.ethereum);
           var accounts = await ethersProvider.send('eth_accounts', []);

@@ -421,6 +421,22 @@
     box-shadow: 0 4px 14px rgba(183,121,31,0.3); transition: all 0.2s;
   }
   .signin-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(183,121,31,0.4); }
+  .social-login-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+    max-width: 520px; margin: 18px auto 8px;
+  }
+  .social-login-btn {
+    display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 54px;
+    border: 1px solid #b8d4b4; border-radius: 13px; background: #fff; color: #173b29;
+    cursor: pointer; font-size: 13px; font-weight: 800; box-shadow: 0 7px 16px rgba(45,101,54,.1);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .social-login-btn:hover { transform: translateY(-2px); border-color: #599c63; box-shadow: 0 11px 22px rgba(45,101,54,.16); }
+  .social-login-btn:disabled { cursor: wait; opacity: .6; transform: none; }
+  .social-login-btn .social-mark { width: 25px; font-size: 21px; line-height: 1; }
+  .social-login-btn.google .social-mark { color: #4285f4; font-family: Arial, sans-serif; font-weight: 900; }
+  .social-login-btn.x .social-mark { color: #111; }
+  .signin-note { color: #476451; font-size: 11px; line-height: 1.45; max-width: 480px; margin: 0 auto; }
 
   /* ==========================================================================
      SYMMETRICAL RESPONSIVE BREAKPOINTS (Mobile & Tablet Perfection)
@@ -978,6 +994,7 @@
     .lb-table { font-size: 11px; }
     .lb-table th, .lb-table td { padding: 7px 5px; }
     .signin-panel { margin: 14px auto; padding: 52px 18px; }
+    .social-login-grid { grid-template-columns: 1fr; max-width: 360px; }
   }
 
   @media (max-width: 380px) {
@@ -1037,8 +1054,13 @@
     <div class="card signin-panel" id="signinGate" style="display:none;">
       <div style="font-size:48px;">🚜</div>
       <h2>Connect to MUSEFARM</h2>
-       <p id="signinMessage">Sign in through the Bankr app to load your synchronized farm.</p>
-       <button class="signin-btn" id="signinAction">Sign In With Bankr</button>
+       <p id="signinMessage">Choose X or Google to sign in securely through Bankr.</p>
+       <div class="social-login-grid" id="socialLoginOptions">
+         <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span></button>
+         <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span></button>
+       </div>
+       <p class="signin-note">Bankr handles the secure sign-in window. Your farm data stays tied to the authenticated account.</p>
+       <button class="signin-btn" id="signinAction" style="display:none;">Continue</button>
     </div>
 
     <!-- Game Workspace -->
@@ -1381,12 +1403,14 @@
     var workspace = document.getElementById('gameWorkspace');
     var messageEl = document.getElementById('signinMessage');
     var action = document.getElementById('signinAction');
+    var socialOptions = document.getElementById('socialLoginOptions');
     if (gate) gate.style.display = 'block';
     if (workspace) workspace.style.display = 'none';
     if (messageEl) messageEl.textContent = message;
     if (action) {
-      action.style.display = canSignIn ? '' : 'none';
+      action.style.display = 'none';
     }
+    if (socialOptions) socialOptions.style.display = canSignIn ? 'grid' : 'none';
   }
 
   function applyFarmResponse(result) {
@@ -2262,7 +2286,25 @@
      }
    }
 
-   async function boot() {
+   async function startBankrSignIn(provider) {
+     if (!bankrApp || !bankrApp.auth) return;
+     var buttons = [document.getElementById('signinX'), document.getElementById('signinGoogle')].filter(Boolean);
+     buttons.forEach(function (button) { button.disabled = true; });
+     var messageEl = document.getElementById('signinMessage');
+     if (messageEl) messageEl.textContent = 'Opening secure Bankr sign-in...';
+     try {
+       // Bankr owns the OAuth provider dialog; the SDK currently exposes one secure sign-in entrypoint.
+       await bankrApp.auth.requireSignIn();
+       await onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr');
+     } catch (err) {
+       if (messageEl) messageEl.textContent = 'Choose X or Google to sign in securely through Bankr.';
+       showBanner((provider || 'Bankr') + ' sign-in cancelled or failed: ' + (err.message || err), 'error');
+     } finally {
+       buttons.forEach(function (button) { button.disabled = false; });
+     }
+   }
+
+    async function boot() {
      setupTabs();
      bankrApp = getBankrApp();
      if (!bankrApp) {
@@ -2270,17 +2312,10 @@
        return;
      }
 
-     var signInBtn = document.getElementById('signinAction');
-     if (signInBtn) {
-       signInBtn.addEventListener('click', async function () {
-         try {
-           await bankrApp.auth.requireSignIn();
-           await onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr');
-         } catch (err) {
-           showBanner('Sign-in cancelled or failed: ' + (err.message || err), 'error');
-         }
-       });
-     }
+      var signinX = document.getElementById('signinX');
+      var signinGoogle = document.getElementById('signinGoogle');
+      if (signinX) signinX.addEventListener('click', function () { startBankrSignIn('X'); });
+      if (signinGoogle) signinGoogle.addEventListener('click', function () { startBankrSignIn('Google'); });
 
      var onReady = function () { onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr'); };
      if (bankrApp.on) {

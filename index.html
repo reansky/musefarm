@@ -580,6 +580,8 @@
     }
   }
 </style>
+  <!-- Ethers.js & Web3 / Privy Integration -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
 </head>
 <body>
 <div id="app">
@@ -593,7 +595,7 @@
         </div>
         <div class="badges-row">
           <span class="badge-rh">ROBINHOOD CHAIN</span>
-          <span class="badge-rail">x402 USDC on Base</span>
+          <span class="badge-rail">Web3 & Privy Enabled</span>
         </div>
       </div>
     </div>
@@ -610,7 +612,7 @@
     <div class="card signin-panel" id="signinGate" style="display:none;">
       <div style="font-size:48px;">🚜</div>
       <h2>Connect to MUSEFARM</h2>
-      <p>Your plots, harvested crops, and treasury allocations are saved directly to your wallet on Robinhood Chain.</p>
+      <p>Connect your wallet (MetaMask, Rabby, Coinbase Wallet, or Privy) to enter your farm.</p>
       <button class="signin-btn" id="signinAction">Enter Farm</button>
     </div>
 
@@ -777,16 +779,34 @@
   <div id="lightboxMount"></div>
 </div>
 
+
 <script>
 (function () {
-  var state = null;
-  var seedConfig = null;
-  var seedRecipes = null;
-  var gridConfig = null;
-  var maxStamina = 20;
-  var staminaRegenMs = 180000;
-  var currentPlot = null;
-  var tickInterval = null;
+  // ==========================================
+  // CONFIGURATION & CREATOR SETTINGS
+  // ==========================================
+  var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
+  var PRIVY_APP_ID = ''; // Set your Privy App ID here if using Privy embedded auth
+
+  // Base Chain USDC Contract & Addresses
+  var BASE_CHAIN_ID = '0x2105'; // 8453 in hex
+  var BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+  var ERC20_ABI = [
+    'function transfer(address to, uint256 amount) returns (bool)',
+    'function balanceOf(address owner) view returns (uint256)',
+    'function decimals() view returns (uint8)'
+  ];
+
+  var SEED_CONFIG = {
+    wheat:       { name: 'Wheat',              emoji: '🌾', costUsd: 0,    growMs: 1*60*1000,    yield: 5,     free: true },
+    corn:        { name: 'Sweet Corn',         emoji: '🌽', costUsd: 0.25, growMs: 2.5*60*1000,  yield: 20 },
+    berry:       { name: 'Golden Berry',       emoji: '🫐', costUsd: 1,    growMs: 7.5*60*1000,  yield: 90 },
+    melon:       { name: 'Celestial Melon',    emoji: '🍈', costUsd: 2.5,  growMs: 22.5*60*1000, yield: 250 },
+    truffle:     { name: 'Royal Truffle',      emoji: '🍄', costUsd: 5,    growMs: 60*60*1000,   yield: 600 },
+    sunflower:   { name: 'Mythic Sunflower',   emoji: '🌻', costUsd: 12.5, growMs: 180*60*1000,  yield: 1800 },
+    dragonfruit: { name: 'Mythic Dragon Fruit',emoji: '🐲', costUsd: 25,   growMs: 360*60*1000,  yield: 4000 },
+    lotus:       { name: 'Cosmic Lotus',       emoji: '🪷', costUsd: 50,   growMs: 720*60*1000,  yield: 10000 }
+  };
 
   var DEFAULT_RECIPES = [
     { from: 'wheat', fromQty: 10, to: 'corn', toQty: 1, name: 'Sweet Corn', emoji: '🌽', desc: '10 Harvested Wheat ➔ 1 Sweet Corn Seed' },
@@ -798,6 +818,26 @@
     { from: 'dragonfruit', fromQty: 2, to: 'lotus', toQty: 1, name: 'Cosmic Lotus', emoji: '🪷', desc: '2 Harvested Dragon Fruit ➔ 1 Cosmic Lotus Seed' }
   ];
 
+  var GRID_CONFIG = {
+    '3x3': { size: 3, plots: 9, costUsd: 0, name: 'Standard 3x3 (9 Plots)' },
+    '4x4': { size: 4, plots: 16, costUsd: 5, name: 'Expanded 4x4 (16 Plots)' },
+    '5x5': { size: 5, plots: 25, costUsd: 7, name: 'Estate 5x5 (25 Plots)' }
+  };
+
+  var MAX_STAMINA = 20;
+  var STAMINA_REGEN_MS = 3 * 60 * 1000;
+  var DAILY_FREE_SEED_CAP = 10;
+
+  // Runtime state
+  var state = null;
+  var userWallet = null;
+  var ethersProvider = null;
+  var ethersSigner = null;
+  var currentPlot = null;
+
+  // ==========================================
+  // HELPERS
+  // ==========================================
   function shortAddr(a) {
     if (!a) return '';
     return a.slice(0, 6) + '…' + a.slice(-4);
@@ -805,8 +845,9 @@
 
   function showBanner(text, type) {
     var b = document.getElementById('noticeBanner');
+    if (!b) return;
     b.innerHTML = '<div class="banner-box ' + (type || 'info') + '">' + text + '</div>';
-    setTimeout(function () { if (b.firstChild) b.innerHTML = ''; }, 4000);
+    setTimeout(function () { if (b && b.firstChild) b.innerHTML = ''; }, 5000);
   }
 
   function spawnFloatText(targetEl, text) {
@@ -832,6 +873,13 @@
     return m + 'm ' + (remS < 10 ? '0' : '') + remS + 's';
   }
 
+  function fmtGrowDuration(ms) {
+    var mins = ms / 60000;
+    if (mins < 60) return (mins % 1 === 0 ? mins : mins.toFixed(1)) + 'm';
+    var hrs = mins / 60;
+    return (hrs % 1 === 0 ? hrs : hrs.toFixed(1)) + 'h';
+  }
+
   function getRankName(lvl) {
     if (lvl >= 10) return 'Mythic Harvester';
     if (lvl >= 7) return 'Master Agronomist';
@@ -840,43 +888,117 @@
     return 'Novice Harvester';
   }
 
-  function fmtGrowDuration(ms) {
-    var mins = ms / 60000;
-    if (mins < 60) {
-      return (mins % 1 === 0 ? mins : mins.toFixed(1)) + 'm';
+  // ==========================================
+  // LOCAL STORAGE FARM STATE ENGINE
+  // ==========================================
+  function getStorageKey(addr) {
+    return 'musefarm_state_' + addr.toLowerCase();
+  }
+
+  function createFreshState(addr) {
+    var now = Date.now();
+    var today = new Date().toISOString().slice(0, 10);
+    var plots = [];
+    for (var i = 0; i < 9; i++) {
+      plots.push({ index: i, state: 'empty', seedType: null, plantedAt: 0 });
     }
-    var hrs = mins / 60;
-    return (hrs % 1 === 0 ? hrs : hrs.toFixed(1)) + 'h';
+    return {
+      walletAddress: addr,
+      muse: 20,
+      level: 1,
+      gridSize: 3,
+      plots: plots,
+      stamina: MAX_STAMINA,
+      staminaUpdatedAt: now,
+      totalHarvested: 0,
+      seedInventory: { wheat: 3, corn: 0, berry: 0, melon: 0, truffle: 0, sunflower: 0, dragonfruit: 0, lotus: 0 },
+      harvestInventory: { wheat: 0, corn: 0, berry: 0, melon: 0, truffle: 0, sunflower: 0, dragonfruit: 0, lotus: 0 },
+      freeSeedClaimedToday: 0,
+      freeSeedDate: today,
+      createdAt: now,
+      updatedAt: now
+    };
   }
 
-  function openAvatarLightbox() {
-    var mount = document.getElementById('lightboxMount');
-    mount.innerHTML =
-      '<div class="modal-backdrop" id="lbBackdrop">' +
-        '<div class="lightbox-card">' +
-          '<img src="https://cdn.phototourl.com/free/2026-09-17-3e6a5bd9-0bb7-40b9-a276-bfc3883a97e8.png" alt="Farmer Full Artwork" />' +
-          '<div class="lightbox-title">🌾 MUSEFARM Official Avatar</div>' +
-          '<div class="lightbox-desc">Full 1277×1277 High Resolution Artwork</div>' +
-          '<button class="modal-close" id="lbCloseBtn">Close View</button>' +
-        '</div>' +
-      '</div>';
+  function loadState(addr) {
+    try {
+      var raw = localStorage.getItem(getStorageKey(addr));
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        return recalc(parsed);
+      }
+    } catch (e) {
+      console.warn('Storage load err', e);
+    }
+    var fresh = createFreshState(addr);
+    saveState(fresh);
+    return fresh;
+  }
 
-    document.getElementById('lbCloseBtn').addEventListener('click', function () { mount.innerHTML = ''; });
-    document.getElementById('lbBackdrop').addEventListener('click', function (e) {
-      if (e.target.id === 'lbBackdrop') mount.innerHTML = '';
+  function saveState(s) {
+    if (!s || !s.walletAddress) return;
+    s.updatedAt = Date.now();
+    localStorage.setItem(getStorageKey(s.walletAddress), JSON.stringify(s));
+  }
+
+  function recalc(s) {
+    var now = Date.now();
+    // Stamina regen
+    if (s.stamina < MAX_STAMINA) {
+      var elapsed = now - s.staminaUpdatedAt;
+      var gained = Math.floor(elapsed / STAMINA_REGEN_MS);
+      if (gained > 0) {
+        s.stamina = Math.min(MAX_STAMINA, s.stamina + gained);
+        s.staminaUpdatedAt = s.staminaUpdatedAt + gained * STAMINA_REGEN_MS;
+      }
+    } else {
+      s.staminaUpdatedAt = now;
+    }
+
+    // Free seed daily reset (UTC date)
+    var today = new Date().toISOString().slice(0, 10);
+    if (s.freeSeedDate !== today) {
+      s.freeSeedDate = today;
+      s.freeSeedClaimedToday = 0;
+    }
+
+    // Plots ready check
+    if (Array.isArray(s.plots)) {
+      s.plots.forEach(function (p) {
+        if (p.state === 'growing' && p.seedType && SEED_CONFIG[p.seedType]) {
+          var cfg = SEED_CONFIG[p.seedType];
+          if (now >= p.plantedAt + cfg.growMs) {
+            p.state = 'ready';
+          }
+        }
+      });
+    }
+
+    // Safe inventories
+    if (!s.seedInventory) s.seedInventory = {};
+    if (!s.harvestInventory) s.harvestInventory = {};
+    Object.keys(SEED_CONFIG).forEach(function (k) {
+      if (typeof s.seedInventory[k] !== 'number') s.seedInventory[k] = 0;
+      if (typeof s.harvestInventory[k] !== 'number') s.harvestInventory[k] = 0;
     });
+
+    return s;
   }
 
+  // ==========================================
+  // RENDERING
+  // ==========================================
   function renderProfile() {
+    if (!state) return;
     document.getElementById('musePoints').textContent = state.muse;
     document.getElementById('farmerLevel').textContent = state.level;
     document.getElementById('staminaPoints').textContent = state.stamina;
-    document.getElementById('staminaMax').textContent = maxStamina;
+    document.getElementById('staminaMax').textContent = MAX_STAMINA;
 
     document.getElementById('farmerTitle').textContent = getRankName(state.level);
     document.getElementById('farmerSubrank').textContent = 'Level ' + state.level + ' · ' + state.totalHarvested + ' Total Harvested';
-    document.getElementById('staminaHeader').textContent = state.stamina + '/' + maxStamina;
-    document.getElementById('staminaProgress').style.width = Math.round((state.stamina / maxStamina) * 100) + '%';
+    document.getElementById('staminaHeader').textContent = state.stamina + '/' + MAX_STAMINA;
+    document.getElementById('staminaProgress').style.width = Math.round((state.stamina / MAX_STAMINA) * 100) + '%';
 
     var nextLvlAt = state.level * 100;
     var prevLvlAt = (state.level - 1) * 100;
@@ -886,8 +1008,8 @@
     document.getElementById('harvestHeader').textContent = state.totalHarvested + ' MUSE';
     document.getElementById('nextLevelEta').textContent = Math.max(0, nextLvlAt - state.totalHarvested) + ' MUSE to Lv ' + (state.level + 1);
 
-    if (state.stamina < maxStamina) {
-      var diff = state.staminaUpdatedAt + staminaRegenMs - Date.now();
+    if (state.stamina < MAX_STAMINA) {
+      var diff = state.staminaUpdatedAt + STAMINA_REGEN_MS - Date.now();
       document.getElementById('staminaCountdown').textContent = '+1 Stamina in ' + fmtTime(diff);
     } else {
       document.getElementById('staminaCountdown').textContent = '⚡ Full Stamina';
@@ -903,7 +1025,8 @@
   }
 
   function renderPlots() {
-    var currentSize = (state && state.gridSize) || 3;
+    if (!state) return;
+    var currentSize = state.gridSize || 3;
     var grid = document.getElementById('plotGrid');
     grid.className = 'grid-container grid-cols-' + currentSize;
 
@@ -918,13 +1041,13 @@
       if (plot.state === 'empty') {
         div.innerHTML = '<div class="plot-icon">+</div><div class="plot-sub">EMPTY</div>';
       } else if (plot.state === 'growing') {
-        var cfg = (seedConfig && seedConfig[plot.seedType]) || {};
+        var cfg = SEED_CONFIG[plot.seedType] || {};
         var rem = (plot.plantedAt + (cfg.growMs || 0)) - Date.now();
         div.innerHTML =
           '<div class="plot-icon">' + (cfg.emoji || '🌱') + '</div>' +
           '<div class="plot-tag" data-plot-plant="' + plot.plantedAt + '" data-plot-grow="' + (cfg.growMs || 0) + '">' + fmtTime(rem) + '</div>';
       } else if (plot.state === 'ready') {
-        var cfg2 = (seedConfig && seedConfig[plot.seedType]) || {};
+        var cfg2 = SEED_CONFIG[plot.seedType] || {};
         div.innerHTML =
           '<div class="plot-icon">' + (cfg2.emoji || '🌾') + '</div>' +
           '<div class="plot-tag">HARVEST!</div>';
@@ -937,15 +1060,14 @@
 
   function renderShop() {
     var list = document.getElementById('seedShopList');
+    if (!list || !state) return;
     list.innerHTML = '';
-    if (!seedConfig) return;
 
-    var freeClaimed = (state && state.freeSeedClaimedToday) || 0;
-    var dailyCap = 10;
-    var freeRemaining = Math.max(0, dailyCap - freeClaimed);
+    var freeClaimed = state.freeSeedClaimedToday || 0;
+    var freeRemaining = Math.max(0, DAILY_FREE_SEED_CAP - freeClaimed);
 
-    Object.keys(seedConfig).forEach(function (key) {
-      var cfg = seedConfig[key];
+    Object.keys(SEED_CONFIG).forEach(function (key) {
+      var cfg = SEED_CONFIG[key];
       var owned = (state.seedInventory && state.seedInventory[key]) || 0;
       var card = document.createElement('div');
       card.className = 'seed-item';
@@ -990,7 +1112,7 @@
         if (isFree) {
           claimFreeWheatFlow();
         } else {
-          buyWithX402(seedType, cost);
+          buySeedOnChain(seedType, Number(cost), b);
         }
       });
     });
@@ -998,17 +1120,17 @@
 
   function renderSynthesis() {
     var list = document.getElementById('synthesisList');
-    if (!list) return;
+    if (!list || !state) return;
     list.innerHTML = '';
-    var recipes = seedRecipes || DEFAULT_RECIPES;
-    var harvestInv = (state && state.harvestInventory) || {};
+    var recipes = DEFAULT_RECIPES;
+    var harvestInv = state.harvestInventory || {};
 
-    // Barn / Gudang Hasil Panen Box
+    // Barn Box
     var barnBox = document.createElement('div');
     barnBox.style.cssText = 'background:#fefbf3; border:1.5px solid var(--card-border); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:10px; width:100%; box-sizing:border-box;';
-    var barnBadges = Object.keys(seedConfig || {}).map(function (k) {
+    var barnBadges = Object.keys(SEED_CONFIG).map(function (k) {
       var count = harvestInv[k] || 0;
-      var cfg = seedConfig[k];
+      var cfg = SEED_CONFIG[k];
       return '<span style="font-size:11px; font-weight:700; background:#fff; border:1px solid #e2d3b5; padding:3px 8px; border-radius:12px; margin:2px; display:inline-flex; align-items:center; gap:4px;">' +
         cfg.emoji + ' ' + count + ' ' + cfg.name + '</span>';
     }).join(' ');
@@ -1018,8 +1140,8 @@
     list.appendChild(barnBox);
 
     recipes.forEach(function (rec) {
-      var fromCfg = (seedConfig && seedConfig[rec.from]) || { name: rec.from, emoji: '🌱' };
-      var toCfg = (seedConfig && seedConfig[rec.to]) || { name: rec.name || rec.to, emoji: rec.emoji || '✨', yield: 0, costUsd: 0 };
+      var fromCfg = SEED_CONFIG[rec.from] || { name: rec.from, emoji: '🌱' };
+      var toCfg = SEED_CONFIG[rec.to] || { name: rec.name || rec.to, emoji: rec.emoji || '✨', yield: 0, costUsd: 0 };
       var currentHarvested = harvestInv[rec.from] || 0;
       var canCraft1 = currentHarvested >= rec.fromQty;
       var maxCraft = Math.floor(currentHarvested / rec.fromQty);
@@ -1064,28 +1186,10 @@
     });
   }
 
-  async function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
-    try {
-      if (triggerBtn) triggerBtn.disabled = true;
-      var res = await bankr.invokeScript('upgradeSeed', { fromSeed: fromSeed, multiplier: mult });
-      if (!res || !res.ok) {
-        showBanner((res && res.error) || 'Upgrade failed.', 'error');
-        if (triggerBtn) triggerBtn.disabled = false;
-        return;
-      }
-      applySync(res);
-      spawnFloatText(triggerBtn, '✨ +' + res.craftedQty + ' ' + res.craftedEmoji);
-      showBanner('🎉 Successfully upgraded ' + (res.recipe.fromQty * mult) + ' harvested ' + res.recipe.from + ' into +' + res.craftedQty + ' ' + res.craftedName + ' Seeds!', 'info');
-    } catch (err) {
-      showBanner('Upgrade error: ' + err.message, 'error');
-      if (triggerBtn) triggerBtn.disabled = false;
-    }
-  }
-
   function renderUpgrades() {
     var mount = document.getElementById('upgradeList');
-    if (!mount) return;
-    var currentSize = (state && state.gridSize) || 3;
+    if (!mount || !state) return;
+    var currentSize = state.gridSize || 3;
 
     var upgrades = [
       {
@@ -1095,8 +1199,7 @@
         plots: 16,
         costUsd: 5.00,
         emoji: '🏡',
-        desc: 'Expands territory from 9 to 16 plots (+7 extra plots). Plant and harvest more crops simultaneously.',
-        endpoint: 'https://x402.bankr.bot/0x0b127f65d167159e4e2bf0b73c2975a14ac3d056/musefarm-grid-4x4'
+        desc: 'Expands territory from 9 to 16 plots (+7 extra plots). Plant and harvest more crops simultaneously.'
       },
       {
         size: 5,
@@ -1105,100 +1208,36 @@
         plots: 25,
         costUsd: 7.00,
         emoji: '🏰',
-        desc: 'The ultimate estate with 25 plots (+16 extra plots). Massive capacity and highest $MUSEFARM accumulation rate.',
-        endpoint: 'https://x402.bankr.bot/0x0b127f65d167159e4e2bf0b73c2975a14ac3d056/musefarm-grid-5x5'
+        desc: 'The ultimate estate with 25 plots (+16 extra plots). Massive capacity and highest $MUSEFARM accumulation rate.'
       }
     ];
 
     mount.innerHTML = upgrades.map(function (u) {
       var isUnlocked = currentSize >= u.size;
-      var btnText = isUnlocked ? 'Unlocked ✅ (Active)' : 'Upgrade to ' + u.key + ' ($' + u.costUsd + ' USDC)';
+      var btnText = isUnlocked ? '✅ Unlocked' : 'Expand Land ($' + u.costUsd + ' USDC)';
       var disabled = isUnlocked ? 'disabled' : '';
 
       return '<div class="upgrade-card">' +
         '<div class="upgrade-header">' +
-          '<div style="display:flex; align-items:center; gap:8px;">' +
-            '<span style="font-size:22px;">' + u.emoji + '</span>' +
-            '<span class="upgrade-title">' + u.name + '</span>' +
-          '</div>' +
+          '<span class="upgrade-title">' + u.emoji + ' ' + u.name + '</span>' +
           '<span class="upgrade-price">$' + u.costUsd + ' USDC</span>' +
         '</div>' +
         '<div class="upgrade-desc">' + u.desc + '</div>' +
-        '<button class="upgrade-btn" data-upgrade-endpoint="' + u.endpoint + '" data-cost="' + u.costUsd + '" data-key="' + u.key + '" ' + disabled + '>' +
-          btnText +
-        '</button>' +
+        '<button class="upgrade-btn" data-size="' + u.size + '" data-cost="' + u.costUsd + '" data-key="' + u.key + '" ' + disabled + '>' + btnText + '</button>' +
       '</div>';
     }).join('');
 
     mount.querySelectorAll('.upgrade-btn:not(:disabled)').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var endpoint = btn.getAttribute('data-upgrade-endpoint');
-        var cost = btn.getAttribute('data-cost');
+        var targetSize = Number(btn.getAttribute('data-size'));
+        var cost = Number(btn.getAttribute('data-cost'));
         var key = btn.getAttribute('data-key');
-        buyGridUpgrade(endpoint, cost, key);
+        buyLandUpgradeOnChain(targetSize, cost, key, btn);
       });
     });
   }
 
-  async function buyGridUpgrade(endpoint, costUsd, key) {
-    showBanner('Opening x402 payment modal for ' + key + ' Grid Upgrade ($' + costUsd + ' USDC on Base)...', 'info');
-    try {
-      var payRes = await bankr.x402.fetch(endpoint, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ upgrade: key }),
-        maxPaymentUsd: Number(costUsd)
-      });
-
-      if (payRes && payRes.ok) {
-        showBanner('🎉 Land upgrade payment confirmed on Base! Expanding your farm...', 'info');
-        await syncState();
-      } else {
-        showBanner('Payment was canceled or not completed.', 'error');
-      }
-    } catch (err) {
-      showBanner('x402 upgrade error: ' + err.message, 'error');
-    }
-  }
-
-  function tickCountdowns() {
-    document.querySelectorAll('[data-plot-plant]').forEach(function (el) {
-      var pAt = Number(el.getAttribute('data-plot-plant'));
-      var gMs = Number(el.getAttribute('data-plot-grow'));
-      var remain = (pAt + gMs) - Date.now();
-      if (remain <= 0) {
-        syncState();
-      } else {
-        el.textContent = fmtTime(remain);
-      }
-    });
-
-    if (state && state.stamina < maxStamina) {
-      var diff = state.staminaUpdatedAt + staminaRegenMs - Date.now();
-      document.getElementById('staminaCountdown').textContent = '+1 Stamina in ' + fmtTime(diff);
-    }
-  }
-
-  function applySync(res) {
-    state = res.state;
-    seedConfig = res.seedConfig || seedConfig;
-    seedRecipes = res.seedRecipes || seedRecipes || DEFAULT_RECIPES;
-    gridConfig = res.gridConfig || gridConfig;
-    maxStamina = res.maxStamina || maxStamina;
-    staminaRegenMs = res.staminaRegenMs || staminaRegenMs;
-
-    if (Array.isArray(res.credited) && res.credited.length > 0) {
-      var summary = res.credited.map(function (c) {
-        var name = (seedConfig[c.seedType] && seedConfig[c.seedType].name) || c.seedType;
-        return '+' + c.qty + ' ' + name;
-      }).join(', ');
-      showBanner('🎉 Shop purchase verified! Credited ' + summary + ' to your seed inventory!', 'info');
-    }
-
-    if (res.upgradedGrid) {
-      showBanner('🎉 Land successfully expanded to ' + res.upgradedGrid + 'x' + res.upgradedGrid + ' (' + (res.upgradedGrid * res.upgradedGrid) + ' Plots)!', 'info');
-    }
-
+  function renderAll() {
     renderProfile();
     renderPlots();
     renderShop();
@@ -1206,26 +1245,16 @@
     renderUpgrades();
   }
 
-  async function syncState() {
-    try {
-      var res = await bankr.invokeScript('getFarm');
-      if (res && res.ok) {
-        applySync(res);
-      } else if (res && res.error) {
-        showBanner(res.error, 'error');
-      }
-    } catch (err) {
-      console.error('sync error', err);
-    }
-  }
-
+  // ==========================================
+  // GAMEPLAY LOGIC
+  // ==========================================
   function handlePlotClick(plot) {
     if (plot.state === 'ready') {
       harvestPlotFlow(plot.index);
     } else if (plot.state === 'empty') {
       openPlantModal(plot.index);
     } else {
-      var cfg = (seedConfig && seedConfig[plot.seedType]) || {};
+      var cfg = SEED_CONFIG[plot.seedType] || {};
       var rem = (plot.plantedAt + (cfg.growMs || 0)) - Date.now();
       showBanner((cfg.name || 'Crop') + ' is growing! Ready to harvest in ' + fmtTime(rem) + '.', 'info');
     }
@@ -1237,8 +1266,8 @@
     var owned = state.seedInventory || {};
 
     var optsHtml = '';
-    Object.keys(seedConfig).forEach(function (k) {
-      var cfg = seedConfig[k];
+    Object.keys(SEED_CONFIG).forEach(function (k) {
+      var cfg = SEED_CONFIG[k];
       var qty = owned[k] || 0;
       var canPlant = qty > 0 && state.stamina >= 1;
       optsHtml +=
@@ -1281,115 +1310,280 @@
     });
   }
 
-  async function plantSeedFlow(plotIdx, seedType) {
-    try {
-      var res = await bankr.invokeScript('plantSeed', { plotIndex: plotIdx, seedType: seedType });
-      if (!res || !res.ok) {
-        if (res && res.state) applySync(res);
-        showBanner((res && res.error) || 'Planting failed.', 'error');
-        return;
-      }
-      applySync(res);
-      var name = (seedConfig[seedType] && seedConfig[seedType].name) || seedType;
-      showBanner('Planted ' + name + ' on plot #' + (plotIdx + 1) + '!', 'info');
-    } catch (err) {
-      showBanner('Plant error: ' + err.message, 'error');
+  function plantSeedFlow(plotIdx, seedType) {
+    if (state.stamina < 1) {
+      showBanner('Not enough stamina! Wait for regen or full rest.', 'error');
+      return;
     }
-  }
-
-  async function harvestPlotFlow(plotIdx) {
-    try {
-      var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
-      var res = await bankr.invokeScript('harvestPlot', { plotIndex: plotIdx });
-      if (!res || !res.ok) {
-        if (res && res.state) applySync(res);
-        showBanner((res && res.error) || 'Harvest failed.', 'error');
-        return;
-      }
-      applySync(res);
-      if (targetPlotEl) {
-        spawnFloatText(targetPlotEl, '+' + res.harvested + ' MUSE' + (res.seedReturned ? ' · ♻️ Seed Kept' : ''));
-      }
-      var msg = '🌾 Harvest successful! +' + res.harvested + ' MUSE & +1 Harvested ' + (res.cropYieldName || '') + ' added to Barn!';
-      if (res.seedReturned) {
-        msg += ' ♻️ Premium seed preserved & returned to inventory for replanting!';
-      }
-      showBanner(msg, 'info');
-    } catch (err) {
-      showBanner('Harvest error: ' + err.message, 'error');
-    }
-  }
-
-  async function claimFreeWheatFlow() {
-    try {
-      var res = await bankr.invokeScript('claimFreeWheat');
-      if (!res || !res.ok) {
-        showBanner((res && res.error) || 'Free seed claim failed.', 'error');
-        return;
-      }
-      applySync(res);
-      showBanner('Claim successful! +1 Wheat Seed (' + res.freeClaimsRemaining + '/10 remaining today).', 'info');
-    } catch (err) {
-      showBanner('Claim error: ' + err.message, 'error');
-    }
-  }
-
-  async function buyWithX402(seedType, costUsd) {
-    var cfg = seedConfig[seedType];
-    if (!cfg || !cfg.endpoint) {
-      showBanner('Invalid seed configuration.', 'error');
+    if ((state.seedInventory[seedType] || 0) < 1) {
+      showBanner('No seeds of that type in inventory.', 'error');
       return;
     }
 
-    showBanner('Opening x402 payment modal for ' + cfg.name + ' ($' + costUsd + ' USDC on Base)...', 'info');
+    state.stamina -= 1;
+    state.seedInventory[seedType] -= 1;
+    state.plots[plotIdx] = {
+      index: plotIdx,
+      state: 'growing',
+      seedType: seedType,
+      plantedAt: Date.now()
+    };
+    saveState(state);
+    renderAll();
+    var name = (SEED_CONFIG[seedType] && SEED_CONFIG[seedType].name) || seedType;
+    showBanner('Planted ' + name + ' on plot #' + (plotIdx + 1) + '!', 'info');
+  }
 
+  function harvestPlotFlow(plotIdx) {
+    var p = state.plots[plotIdx];
+    if (!p || p.state !== 'ready') return;
+    var cfg = SEED_CONFIG[p.seedType] || {};
+    var gainedMuse = cfg.yield || 5;
+
+    state.muse += gainedMuse;
+    state.totalHarvested += gainedMuse;
+    state.level = Math.floor(state.totalHarvested / 100) + 1;
+
+    // Add harvested crop to barn inventory
+    if (!state.harvestInventory) state.harvestInventory = {};
+    state.harvestInventory[p.seedType] = (state.harvestInventory[p.seedType] || 0) + 1;
+
+    // Premium seeds are reusable: returns seed to inventory
+    var seedReturned = !cfg.free;
+    if (seedReturned) {
+      state.seedInventory[p.seedType] = (state.seedInventory[p.seedType] || 0) + 1;
+    }
+
+    // Reset plot to empty
+    state.plots[plotIdx] = { index: plotIdx, state: 'empty', seedType: null, plantedAt: 0 };
+    saveState(state);
+    renderAll();
+
+    var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
+    if (targetPlotEl) {
+      spawnFloatText(targetPlotEl, '+' + gainedMuse + ' MUSE' + (seedReturned ? ' · ♻️ Seed Kept' : ''));
+    }
+    var msg = '🌾 Harvest successful! +' + gainedMuse + ' MUSE & +1 Harvested ' + (cfg.name || '') + ' added to Barn!';
+    if (seedReturned) {
+      msg += ' ♻️ Premium seed preserved & returned to inventory for replanting!';
+    }
+    showBanner(msg, 'info');
+  }
+
+  function claimFreeWheatFlow() {
+    var claimed = state.freeSeedClaimedToday || 0;
+    if (claimed >= DAILY_FREE_SEED_CAP) {
+      showBanner('Daily limit reached! 10/10 free seeds claimed today.', 'error');
+      return;
+    }
+    state.freeSeedClaimedToday = claimed + 1;
+    state.seedInventory.wheat = (state.seedInventory.wheat || 0) + 1;
+    saveState(state);
+    renderAll();
+    showBanner('Claim successful! +1 Wheat Seed (' + (DAILY_FREE_SEED_CAP - state.freeSeedClaimedToday) + '/10 remaining today).', 'info');
+  }
+
+  function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
+    var rec = DEFAULT_RECIPES.find(function (r) { return r.from === fromSeed; });
+    if (!rec) return;
+    var requiredTotal = rec.fromQty * mult;
+    var currentHarvested = (state.harvestInventory && state.harvestInventory[fromSeed]) || 0;
+
+    if (currentHarvested < requiredTotal) {
+      showBanner('Not enough harvested crops! Need ' + requiredTotal + ' ' + rec.from, 'error');
+      return;
+    }
+
+    state.harvestInventory[fromSeed] -= requiredTotal;
+    var craftedQty = rec.toQty * mult;
+    state.seedInventory[rec.to] = (state.seedInventory[rec.to] || 0) + craftedQty;
+    saveState(state);
+    renderAll();
+
+    if (triggerBtn) spawnFloatText(triggerBtn, '✨ +' + craftedQty + ' ' + rec.emoji);
+    showBanner('🎉 Successfully upgraded ' + requiredTotal + ' harvested ' + rec.from + ' into +' + craftedQty + ' ' + rec.name + ' Seeds!', 'info');
+  }
+
+  // ==========================================
+  // ON-CHAIN PAYMENT ENGINE (USDC TO CREATOR)
+  // ==========================================
+  async function ensureWeb3Signer() {
+    if (ethersSigner) return ethersSigner;
+    if (window.ethereum) {
+      ethersProvider = new ethers.BrowserProvider(window.ethereum);
+      ethersSigner = await ethersProvider.getSigner();
+      return ethersSigner;
+    }
+    throw new Error('No Web3 wallet detected. Please connect MetaMask, Rabby, Coinbase Wallet, or Privy.');
+  }
+
+  async function executeOnChainPayment(costUsd) {
+    var signer = await ensureWeb3Signer();
+    
+    // Check if on Base or switch network
     try {
-      var payRes = await bankr.x402.fetch(cfg.endpoint, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ seedType: seedType, qty: 1 }),
-        maxPaymentUsd: Number(costUsd)
+      var net = await ethersProvider.getNetwork();
+      if (net.chainId !== 8453n) {
+        showBanner('Switching network to Base chain...', 'info');
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: BASE_CHAIN_ID }]
+        });
+        ethersProvider = new ethers.BrowserProvider(window.ethereum);
+        signer = await ethersProvider.getSigner();
+      }
+    } catch (switchErr) {
+      console.warn('Network switch check', switchErr);
+    }
+
+    // Try paying via USDC on Base first
+    try {
+      var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, signer);
+      var amountUnits = ethers.parseUnits(costUsd.toString(), 6);
+      showBanner('Please confirm the $' + costUsd + ' USDC transfer to Creator in your wallet...', 'info');
+      var tx = await usdc.transfer(CREATOR_WALLET, amountUnits);
+      showBanner('Transaction submitted! Waiting for confirmation (' + tx.hash.slice(0, 10) + '...)...', 'info');
+      await tx.wait();
+      return { success: true, hash: tx.hash, method: 'USDC' };
+    } catch (usdcErr) {
+      console.warn('USDC transfer error, checking alternative/native payment', usdcErr);
+      // If user cancelled, rethrow
+      if (usdcErr.code === 'ACTION_REJECTED' || (usdcErr.info && usdcErr.info.error && usdcErr.info.error.code === 4001)) {
+        throw new Error('Transaction was cancelled by user.');
+      }
+      
+      // Fallback: allow native payment or show clear instruction
+      var ethPriceEstimate = 2600; // ~$2600/ETH
+      var ethAmount = (costUsd / ethPriceEstimate).toFixed(6);
+      var confirmEth = confirm('USDC transfer could not complete. Would you like to pay with equivalent ETH (' + ethAmount + ' ETH) to creator wallet?\n\nRecipient: ' + CREATOR_WALLET);
+      if (!confirmEth) throw usdcErr;
+
+      showBanner('Please confirm the ' + ethAmount + ' ETH transfer in your wallet...', 'info');
+      var txEth = await signer.sendTransaction({
+        to: CREATOR_WALLET,
+        value: ethers.parseEther(ethAmount.toString())
       });
-
-      if (payRes && payRes.ok) {
-        showBanner('Payment confirmed on Base! Updating inventory...', 'info');
-        await syncState();
-      } else {
-        showBanner('Payment was canceled or not completed.', 'error');
-      }
-    } catch (err) {
-      showBanner('x402 error: ' + err.message, 'error');
+      showBanner('Transaction submitted! Waiting for confirmation...', 'info');
+      await txEth.wait();
+      return { success: true, hash: txEth.hash, method: 'ETH' };
     }
   }
 
-  async function loadLeaderboard(force) {
-    var tbody = document.getElementById('lbTableBody');
-    if (force) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Updating leaderboard standings...</td></tr>';
-    }
+  async function buySeedOnChain(seedType, costUsd, btnEl) {
+    var cfg = SEED_CONFIG[seedType];
+    if (!cfg) return;
+
+    if (btnEl) btnEl.disabled = true;
+    showBanner('Initiating onchain purchase for ' + cfg.name + ' ($' + costUsd + ' USDC) to creator wallet ' + shortAddr(CREATOR_WALLET) + '...', 'info');
+
     try {
-      var res = await bankr.invokeScript('getLeaderboard', force ? { force: true } : {});
-      var entries = (res && res.entries) || [];
-      if (!entries.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">No farm harvests recorded yet. Plant and harvest crops to enter the rankings!</td></tr>';
-        return;
+      var payRes = await executeOnChainPayment(costUsd);
+      if (payRes && payRes.success) {
+        state.seedInventory[seedType] = (state.seedInventory[seedType] || 0) + 1;
+        saveState(state);
+        renderAll();
+        showBanner('🎉 Payment confirmed! +1 ' + cfg.name + ' Seed added to inventory! TX: ' + payRes.hash.slice(0, 10) + '...', 'info');
       }
-      tbody.innerHTML = entries.map(function (row, idx) {
-        var isMe = state && state.walletAddress && row.walletAddress && (row.walletAddress.toLowerCase() === state.walletAddress.toLowerCase());
-        var highlight = isMe ? ' style="background:#f0fff4; font-weight:700;"' : '';
-        var medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1);
-        return '<tr' + highlight + '>' +
-          '<td>' + medal + '</td>' +
-          '<td>' + shortAddr(row.walletAddress) + (isMe ? ' (You)' : '') + '</td>' +
-          '<td>' + row.level + '</td>' +
-          '<td>' + row.totalHarvested + ' MUSE</td>' +
-        '</tr>';
-      }).join('');
     } catch (err) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger);">Error loading leaderboard standings</td></tr>';
+      showBanner('Purchase error: ' + (err.message || err), 'error');
+    } finally {
+      if (btnEl) btnEl.disabled = false;
     }
   }
 
+  async function buyLandUpgradeOnChain(targetSize, costUsd, key, btnEl) {
+    if (btnEl) btnEl.disabled = true;
+    showBanner('Initiating land expansion payment ($' + costUsd + ' USDC) to creator wallet ' + shortAddr(CREATOR_WALLET) + '...', 'info');
+
+    try {
+      var payRes = await executeOnChainPayment(costUsd);
+      if (payRes && payRes.success) {
+        var prevPlotsCount = state.plots.length;
+        var newTotalPlots = targetSize * targetSize;
+        state.gridSize = targetSize;
+        for (var i = prevPlotsCount; i < newTotalPlots; i++) {
+          state.plots.push({ index: i, state: 'empty', seedType: null, plantedAt: 0 });
+        }
+        saveState(state);
+        renderAll();
+        showBanner('🎉 Land successfully expanded to ' + targetSize + 'x' + targetSize + ' (' + newTotalPlots + ' plots)! TX: ' + payRes.hash.slice(0, 10) + '...', 'info');
+      }
+    } catch (err) {
+      showBanner('Upgrade error: ' + (err.message || err), 'error');
+    } finally {
+      if (btnEl) btnEl.disabled = false;
+    }
+  }
+
+  // ==========================================
+  // TICK COUNTERS
+  // ==========================================
+  function tickCountdowns() {
+    if (!state) return;
+    document.querySelectorAll('[data-plot-plant]').forEach(function (el) {
+      var pAt = Number(el.getAttribute('data-plot-plant'));
+      var gMs = Number(el.getAttribute('data-plot-grow'));
+      var remain = (pAt + gMs) - Date.now();
+      if (remain <= 0) {
+        state = recalc(state);
+        renderPlots();
+      } else {
+        el.textContent = fmtTime(remain);
+      }
+    });
+
+    if (state.stamina < MAX_STAMINA) {
+      var diff = state.staminaUpdatedAt + STAMINA_REGEN_MS - Date.now();
+      document.getElementById('staminaCountdown').textContent = '+1 Stamina in ' + fmtTime(diff);
+    }
+  }
+
+  // ==========================================
+  // LEADERBOARD
+  // ==========================================
+  function loadLeaderboard(force) {
+    var tbody = document.getElementById('lbTableBody');
+    if (!tbody) return;
+
+    var mockEntries = [
+      { walletAddress: '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056', level: 12, totalHarvested: 8450 },
+      { walletAddress: '0x3841a1829910c22c009d1238491a928e102fba31', level: 9, totalHarvested: 5200 },
+      { walletAddress: '0x71c08b492318cf01b44d32049b18371901a88b19', level: 7, totalHarvested: 3100 },
+      { walletAddress: '0xa4188b2019488a01f8273901b8274a91901848b1', level: 6, totalHarvested: 2450 }
+    ];
+
+    if (state && state.walletAddress) {
+      var found = mockEntries.find(function (e) { return e.walletAddress.toLowerCase() === state.walletAddress.toLowerCase(); });
+      if (found) {
+        found.level = Math.max(found.level, state.level);
+        found.totalHarvested = Math.max(found.totalHarvested, state.totalHarvested);
+      } else {
+        mockEntries.push({
+          walletAddress: state.walletAddress,
+          level: state.level,
+          totalHarvested: state.totalHarvested
+        });
+      }
+    }
+
+    mockEntries.sort(function (a, b) { return b.totalHarvested - a.totalHarvested; });
+
+    tbody.innerHTML = mockEntries.map(function (row, idx) {
+      var isMe = state && state.walletAddress && (row.walletAddress.toLowerCase() === state.walletAddress.toLowerCase());
+      var highlight = isMe ? ' style="background:#f0fff4; font-weight:700;"' : '';
+      var medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1);
+      return '<tr' + highlight + '>' +
+        '<td>' + medal + '</td>' +
+        '<td>' + shortAddr(row.walletAddress) + (isMe ? ' (You)' : '') + '</td>' +
+        '<td>' + row.level + '</td>' +
+        '<td>' + row.totalHarvested + ' MUSE</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ==========================================
+  // TABS & UI NAVIGATION
+  // ==========================================
   function setupTabs() {
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -1433,26 +1627,116 @@
     }
   }
 
-  async function boot() {
-    setupTabs();
+  function openAvatarLightbox() {
+    var mount = document.getElementById('lightboxMount');
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="lbBackdrop">' +
+        '<div class="lightbox-card">' +
+          '<img src="https://cdn.phototourl.com/free/2026-09-17-3e6a5bd9-0bb7-40b9-a276-bfc3883a97e8.png" alt="Farmer Full Artwork" />' +
+          '<div class="lightbox-title">🌾 MUSEFARM Official Avatar</div>' +
+          '<div class="lightbox-desc">Full 1277×1277 High Resolution Artwork</div>' +
+          '<button class="modal-close" id="lbCloseBtn">Close View</button>' +
+        '</div>' +
+      '</div>';
 
-    if (!bankr.ctx.isAuthenticated) {
-      document.getElementById('signinGate').style.display = 'block';
-      document.getElementById('signinAction').addEventListener('click', async function () {
-        await bankr.auth.requireSignIn();
-        location.reload();
-      });
-      return;
+    document.getElementById('lbCloseBtn').addEventListener('click', function () { mount.innerHTML = ''; });
+    document.getElementById('lbBackdrop').addEventListener('click', function (e) {
+      if (e.target.id === 'lbBackdrop') mount.innerHTML = '';
+    });
+  }
+
+  // ==========================================
+  // WALLET & PRIVY CONNECTION FLOW
+  // ==========================================
+  async function connectWallet() {
+    // If Privy App ID is set, use Privy
+    if (PRIVY_APP_ID && window.Privy) {
+      try {
+        var privy = new window.Privy({ appId: PRIVY_APP_ID });
+        var user = await privy.login();
+        if (user && user.wallet) {
+          onWalletConnected(user.wallet.address);
+          return;
+        }
+      } catch (privyErr) {
+        console.warn('Privy connect error', privyErr);
+      }
     }
 
-    document.getElementById('gameWorkspace').style.display = 'grid';
-    await syncState();
+    // Standard Injected Web3 / MetaMask / Rabby / Coinbase
+    if (window.ethereum) {
+      try {
+        ethersProvider = new ethers.BrowserProvider(window.ethereum);
+        var accounts = await ethersProvider.send('eth_requestAccounts', []);
+        if (accounts && accounts.length > 0) {
+          ethersSigner = await ethersProvider.getSigner();
+          onWalletConnected(accounts[0]);
+          return;
+        }
+      } catch (ethErr) {
+        showBanner('Connection rejected: ' + (ethErr.message || ethErr), 'error');
+        return;
+      }
+    }
 
-    setInterval(syncState, 20000);
+    showBanner('No Web3 wallet found. Please install MetaMask, Rabby, Coinbase Wallet, or configure Privy.', 'error');
+  }
+
+  function onWalletConnected(addr) {
+    userWallet = addr;
+    state = loadState(addr);
+
+    document.getElementById('signinGate').style.display = 'none';
+    document.getElementById('gameWorkspace').style.display = 'grid';
+
+    renderAll();
+    loadLeaderboard();
+
+    showBanner('Connected as ' + shortAddr(addr) + '! Welcome to MUSEFARM.', 'info');
+
+    // Auto-regen stamina and tick timers
+    setInterval(function () {
+      if (state) {
+        state = recalc(state);
+        renderProfile();
+      }
+    }, 15000);
     setInterval(tickCountdowns, 1000);
   }
 
-  bankr.on('ready', boot);
+  async function boot() {
+    setupTabs();
+
+    // Check if wallet already connected in session
+    if (window.ethereum) {
+      try {
+        ethersProvider = new ethers.BrowserProvider(window.ethereum);
+        var accounts = await ethersProvider.send('eth_accounts', []);
+        if (accounts && accounts.length > 0) {
+          ethersSigner = await ethersProvider.getSigner();
+          onWalletConnected(accounts[0]);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    // Show signin gate
+    document.getElementById('signinGate').style.display = 'block';
+    document.getElementById('signinAction').addEventListener('click', connectWallet);
+
+    // Listen for account changes
+    if (window.ethereum && window.ethereum.on) {
+      window.ethereum.on('accountsChanged', function (accounts) {
+        if (accounts.length > 0) {
+          onWalletConnected(accounts[0]);
+        } else {
+          location.reload();
+        }
+      });
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', boot);
 })();
 </script>
 </body>

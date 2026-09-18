@@ -1019,8 +1019,8 @@
           <h1>MUSEFARM</h1>
         </div>
         <div class="badges-row">
-          <span class="badge-rh">ROBINHOOD CHAIN</span>
-           <span class="badge-rail">Web3 Wallet Enabled</span>
+           <span class="badge-rh">LIVE BANKR STATE</span>
+            <span class="badge-rail">BASE PAYMENTS</span>
         </div>
       </div>
     </div>
@@ -1105,7 +1105,7 @@
           </div>
           <div class="farm-subtitle-row">
             <span style="color:var(--leaf);">Tap plot to Plant or Harvest</span>
-            <span style="color:var(--ink-muted); font-size:10px;">Robinhood Chain State</span>
+             <span style="color:var(--ink-muted); font-size:10px;">Live Bankr State</span>
           </div>
         </div>
 
@@ -1123,7 +1123,7 @@
           <button class="tab-btn" data-tab="synthesis">✨ Seed Upgrade</button>
           <button class="tab-btn" data-tab="upgrade">Land Upgrade</button>
           <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
-          <button class="tab-btn" data-tab="treasury">Rewards & $MUSEFARM</button>
+           <button class="tab-btn" data-tab="treasury">Rewards & Score</button>
          </div>
 
          <!-- Wallet Tab -->
@@ -1191,15 +1191,15 @@
         <!-- Land Upgrade Tab -->
         <div id="tabUpgrade" style="display:none;">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-            Expand your farm territory on Robinhood Chain! Upgrades settle via <strong>x402 USDC on Base</strong> straight to creator wallet.
+             Expand your farm territory with <strong>x402 USDC on Base</strong>. The payment is confirmed before the live farm updates.
           </div>
           <div id="upgradeList"></div>
         </div>
 
         <!-- Leaderboard Tab -->
-        <div id="tabLeaderboard" style="display:none;">
+         <div id="tabLeaderboard" style="display:none;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:11px; color:var(--ink-muted);">Top 20 Harvesters on Robinhood Chain</span>
+             <span style="font-size:11px; color:var(--ink-muted);">Top 20 Harvesters from live Bankr state</span>
             <button id="refreshLbBtn" style="background:#fff; border:1px solid var(--card-border); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; color:var(--leaf-dark);">🔄 Refresh</button>
           </div>
           <table class="lb-table">
@@ -1221,11 +1221,11 @@
             </div>
 
             <div class="mechanism-card">
-              <strong>Conversion Rate & Reward Mechanism:</strong><br/>
-              • <strong>1 MUSE = 2 $MUSEFARM</strong> token rewards.<br/>
-              • Every crop harvested generates MUSE points that accumulate in real-time.<br/>
-              • Total $MUSEFARM token allocation is calculated at 2x your harvested MUSE points.<br/>
-              • Direct onchain claims will unlock via a Merkle-Drop Distributor contract on Robinhood Chain upon token launch.
+               <strong>Reward accounting:</strong><br/>
+               • <strong>1 MUSE = 2 reward score</strong> in the live ledger.<br/>
+               • Every crop harvested updates your score in real-time.<br/>
+               • The score is not a claimable token until a distributor contract is deployed.<br/>
+               • Claiming stays disabled until the contract and allocation snapshot are live.
             </div>
 
             <div>
@@ -1233,7 +1233,7 @@
               <div style="display:flex; justify-content:space-between; align-items:center; background:#f7fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0;">
                 <div>
                   <div style="font-size:13px; font-weight:800; color:var(--gold-dark);" id="userHarvestAllocation">0 MUSE Harvested</div>
-                  <div style="font-size:11px; font-weight:700; color:var(--leaf-dark); margin-top:2px;" id="userTokenAllocation">≈ 0 $MUSEFARM (1:2 Rate)</div>
+                   <div style="font-size:11px; font-weight:700; color:var(--leaf-dark); margin-top:2px;" id="userTokenAllocation">Reward score: 0 (1:2 accounting rate)</div>
                 </div>
                 <span style="font-size:11px; font-weight:700; color:var(--leaf);" id="userPercentShare">Ready for Claim</span>
               </div>
@@ -1307,7 +1307,6 @@
    var state = null;
    var userWallet = null;
    var authType = null; // 'bankr'
-   var embeddedWallet = null; // Ethers.js Wallet instance for guest wallet
    var ethersProvider = null;
    var ethersSigner = null;
    var baseReadProvider = null;
@@ -1533,7 +1532,7 @@
       document.getElementById('userHarvestAllocation').textContent = state.totalHarvested + ' MUSE Harvested';
       var farmTokens = (state.totalHarvested || 0) * 2;
       var allocEl = document.getElementById('userTokenAllocation');
-      if (allocEl) allocEl.textContent = '≈ ' + farmTokens.toLocaleString() + ' $MUSEFARM (1:2 Rate)';
+       if (allocEl) allocEl.textContent = 'Reward score: ' + farmTokens.toLocaleString() + ' (1:2 accounting rate)';
      }
    }
 
@@ -1730,7 +1729,7 @@
         plots: 25,
         costUsd: 7.00,
         emoji: '🏰',
-        desc: 'The ultimate estate with 25 plots (+16 extra plots). Massive capacity and highest $MUSEFARM accumulation rate.'
+         desc: 'The ultimate estate with 25 plots (+16 extra plots). Massive capacity and the highest reward-score capacity.'
       }
     ];
 

@@ -1,7 +1,7 @@
 {
   "slug": "musefarm",
   "title": "MUSEFARM",
-  "description": "MUSEFARM — a live per-wallet farming game powered by Bankr app state, with Base x402 purchases and confirmed wallet transactions.",
+  "description": "MUSEFARM — X/Google sign-in with Privy embedded wallets, Base x402 purchases, and live per-wallet farm scripts when opened in Bankr.",
   "frontendIdentity": "viewer",
   "permissions": [
     "read:appdata",

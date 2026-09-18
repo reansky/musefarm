@@ -1036,7 +1036,7 @@
           <h1>MUSEFARM</h1>
         </div>
         <div class="badges-row">
-           <span class="badge-rh">LIVE BANKR STATE</span>
+           <span class="badge-rh">PRIVY WALLET</span>
             <span class="badge-rail">BASE PAYMENTS</span>
         </div>
       </div>
@@ -1053,13 +1053,20 @@
     <!-- Sign In Gate -->
     <div class="card signin-panel" id="signinGate" style="display:none;">
       <div style="font-size:48px;">🚜</div>
-      <h2>Connect to MUSEFARM</h2>
-       <p id="signinMessage">Choose X or Google to sign in securely through Bankr.</p>
+       <h2 id="signinTitle">Connect to MUSEFARM</h2>
+        <p id="signinMessage">Choose X or Google to create your Privy wallet.</p>
        <div class="social-login-grid" id="socialLoginOptions">
          <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span></button>
          <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span></button>
        </div>
-       <p class="signin-note">Bankr handles the secure sign-in window. Your farm data stays tied to the authenticated account.</p>
+       <p class="signin-note">Privy handles the secure sign-in window and creates an embedded Ethereum wallet for your account.</p>
+       <div id="privyWalletStatus" style="display:none; margin:16px auto 0; max-width:520px; text-align:left; background:#fff; border:1px solid #b8d4b4; border-radius:13px; padding:12px;">
+         <div style="font-size:11px; color:#476451; font-weight:800; margin-bottom:5px;">YOUR PRIVY ONCHAIN WALLET</div>
+         <div id="privyWalletAddress" style="font-family:monospace; font-size:11px; color:#173b29; word-break:break-all; margin-bottom:8px;"></div>
+         <div style="font-size:11px; color:#476451; margin-bottom:8px;">Base balance: <strong id="privyNativeBalance">-- ETH</strong> · <strong id="privyUsdcBalance">-- USDC</strong></div>
+         <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer" style="font-size:11px; font-weight:800; color:#276341;">View on BaseScan ↗</a>
+         <button class="modal-close" id="privyLogoutBtn" type="button" style="margin-top:10px;">Sign out</button>
+       </div>
        <button class="signin-btn" id="signinAction" style="display:none;">Continue</button>
     </div>
 
@@ -1127,7 +1134,7 @@
           </div>
           <div class="farm-subtitle-row">
             <span style="color:var(--leaf);">Tap plot to Plant or Harvest</span>
-             <span style="color:var(--ink-muted); font-size:10px;">Live Bankr State</span>
+             <span style="color:var(--ink-muted); font-size:10px;">Live Farm State</span>
           </div>
         </div>
 
@@ -1221,7 +1228,7 @@
         <!-- Leaderboard Tab -->
          <div id="tabLeaderboard" style="display:none;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-             <span style="font-size:11px; color:var(--ink-muted);">Top 20 Harvesters from live Bankr state</span>
+             <span style="font-size:11px; color:var(--ink-muted);">Top 20 Harvesters from live state</span>
             <button id="refreshLbBtn" style="background:#fff; border:1px solid var(--card-border); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; color:var(--leaf-dark);">🔄 Refresh</button>
           </div>
           <table class="lb-table">
@@ -1275,9 +1282,102 @@
 
   <div id="plantModalMount"></div>
   <div id="lightboxMount"></div>
+  <div id="privyRoot" hidden></div>
 </div>
 
+<script type="module">
+  (async function () {
+    try {
+      var ReactModule = await import('https://esm.sh/react@19.2.3');
+      var ReactDOM = await import('https://esm.sh/react-dom@19.2.3/client');
+      var Privy = await import('https://esm.sh/@privy-io/react-auth@3.44.0?deps=react@19.2.3,react-dom@19.2.3');
+      var React = ReactModule.default;
+      var APP_ID = 'cmu7g5avd00b70cl2qeexjg93';
 
+      function publishState(detail) {
+        window.__musefarmPrivyState = detail;
+        window.dispatchEvent(new CustomEvent('musefarm:privy-state', { detail: detail }));
+      }
+
+      function PrivyBridge() {
+        var privy = Privy.usePrivy();
+        var walletState = Privy.useWallets();
+        var walletCreator = Privy.useCreateWallet();
+        var createInProgress = React.useRef(false);
+        var createdWallet = React.useRef(null);
+        var oauth = Privy.useLoginWithOAuth({
+          onError: function (error) {
+            window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
+          }
+        });
+
+        React.useEffect(function () {
+          window.__musefarmPrivyBridge = {
+            login: function (provider) { return oauth.initOAuth({ provider: provider }); },
+            logout: privy.logout
+          };
+          var onLogin = function (event) {
+            oauth.initOAuth({ provider: event.detail.provider });
+          };
+          window.addEventListener('musefarm:privy-login', onLogin);
+          if (window.__musefarmPendingProvider) {
+            var pending = window.__musefarmPendingProvider;
+            window.__musefarmPendingProvider = null;
+            onLogin({ detail: { provider: pending } });
+          }
+          return function () {
+            window.removeEventListener('musefarm:privy-login', onLogin);
+          };
+        }, [oauth.initOAuth, privy.logout]);
+
+        React.useEffect(function () {
+          if (!privy.ready) {
+            publishState({ ready: false, authenticated: false });
+            return;
+          }
+          if (!privy.authenticated) {
+            publishState({ ready: true, authenticated: false });
+            return;
+          }
+          var embedded = (walletState.wallets || []).find(function (wallet) {
+            return wallet.walletClientType === 'privy' || wallet.walletClientType === 'privy embedded wallet';
+          });
+          var wallet = embedded || createdWallet.current;
+          if (!wallet && walletState.ready && !createInProgress.current) {
+            createInProgress.current = true;
+            walletCreator.createWallet().then(function (created) {
+              createdWallet.current = created;
+              publishState({ ready: true, authenticated: true, user: privy.user, wallet: created });
+            }).catch(function (error) {
+              window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
+            }).finally(function () {
+              createInProgress.current = false;
+            });
+            return;
+          }
+          if (wallet) publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet });
+        }, [privy.ready, privy.authenticated, privy.user, walletState.wallets, walletState.ready, walletCreator.createWallet]);
+
+        return null;
+      }
+
+      var root = ReactDOM.createRoot(document.getElementById('privyRoot'));
+      root.render(React.createElement(
+        Privy.PrivyProvider,
+        {
+          appId: APP_ID,
+          config: {
+            loginMethods: ['google', 'twitter'],
+            embeddedWallets: { ethereum: { createOnLogin: 'off' } }
+          }
+        },
+        React.createElement(PrivyBridge)
+      ));
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
+    }
+  })();
+</script>
 
 <script>
 (function () {
@@ -1328,12 +1428,13 @@
   // Runtime state
    var state = null;
    var userWallet = null;
-   var authType = null; // 'bankr'
+    var authType = null; // 'privy'
    var ethersProvider = null;
    var ethersSigner = null;
    var baseReadProvider = null;
    var walletBalances = { native: '--', usdc: '--' };
-   var currentPlot = null;
+    var currentPlot = null;
+    var privyWallet = null;
    var bankrApp = null;
    var liveSyncTimer = null;
    var liveTimersStarted = false;
@@ -1404,6 +1505,7 @@
     var messageEl = document.getElementById('signinMessage');
     var action = document.getElementById('signinAction');
     var socialOptions = document.getElementById('socialLoginOptions');
+    var walletStatus = document.getElementById('privyWalletStatus');
     if (gate) gate.style.display = 'block';
     if (workspace) workspace.style.display = 'none';
     if (messageEl) messageEl.textContent = message;
@@ -1411,6 +1513,7 @@
       action.style.display = 'none';
     }
     if (socialOptions) socialOptions.style.display = 'grid';
+    if (walletStatus) walletStatus.style.display = 'none';
   }
 
   function applyFarmResponse(result) {
@@ -1567,6 +1670,10 @@
      if (addressEl) addressEl.textContent = userWallet || '--';
      if (nativeEl) nativeEl.textContent = walletBalances.native + ' ETH';
      if (usdcEl) usdcEl.textContent = walletBalances.usdc + ' USDC';
+     var privyNativeEl = document.getElementById('privyNativeBalance');
+     var privyUsdcEl = document.getElementById('privyUsdcBalance');
+     if (privyNativeEl) privyNativeEl.textContent = walletBalances.native + ' ETH';
+     if (privyUsdcEl) privyUsdcEl.textContent = walletBalances.usdc + ' USDC';
    }
 
   function renderPlots() {
@@ -1824,6 +1931,16 @@
    }
 
    async function switchToBaseNetwork() {
+     if (authType === 'privy' && privyWallet && privyWallet.getEthereumProvider) {
+       var privyProvider = await privyWallet.getEthereumProvider();
+       var privyNet = await privyProvider.request({ method: 'eth_chainId' });
+       if (privyNet !== BASE_CHAIN_ID) {
+         await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+       }
+       ethersProvider = new ethers.BrowserProvider(privyProvider);
+       ethersSigner = await ethersProvider.getSigner();
+       return;
+     }
      if (authType !== 'injected' || !window.ethereum) return;
      if (!ethersProvider) ethersProvider = new ethers.BrowserProvider(window.ethereum);
      var net = await ethersProvider.getNetwork();
@@ -1878,13 +1995,10 @@
           return;
         }
         var signer;
-       if (authType === 'injected') {
-         await switchToBaseNetwork();
-         signer = ethersSigner;
-       } else if (authType === 'guest' && embeddedWallet) {
-         if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
-         signer = embeddedWallet.connect(baseReadProvider);
-       } else {
+        if (authType === 'privy' || authType === 'injected') {
+          await switchToBaseNetwork();
+          signer = ethersSigner;
+        } else {
          throw new Error('No wallet signer available.');
        }
 
@@ -2248,8 +2362,8 @@
             '<button class="buy-btn" id="copyWalletBtn" style="flex:1;">📋 Copy Address</button>' +
             '<a href="https://basescan.org/address/' + userWallet + '" target="_blank" style="padding:6px 12px; background:#edf2f7; border-radius:8px; font-size:11px; font-weight:800; color:#4a5568; text-decoration:none; display:flex; align-items:center;">BaseScan ↗</a>' +
           '</div>' +
-           (authType === 'guest' ?
-             '<div style="background:#fffaf0; border:1px solid #feebc8; border-radius:8px; padding:10px; margin-bottom:12px; font-size:10px; color:#744210;">⚡ Guest wallet is stored in this browser. Do not clear browser data until you have moved your funds.</div>' : '') +
+           (authType === 'privy' ?
+             '<div style="background:#eef8ee; border:1px solid #b8d4b4; border-radius:8px; padding:10px; margin-bottom:12px; font-size:10px; color:#276341;">🔐 This embedded wallet is managed by your Privy account.</div>' : '') +
            '<button class="upgrade-btn" id="disconnectWalletBtn" style="background:#fed7d7; color:#9b2c2c; box-shadow:none; margin-bottom:6px;">Disconnect Wallet</button>' +
           '<button class="modal-close" id="closeWalletDetailsBtn">Close</button>' +
         '</div>' +
@@ -2260,10 +2374,10 @@
       this.textContent = '✅ Copied!';
     });
 
-     document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
-       showBanner('Manage your Bankr sign-in from the host app.', 'info');
-       mount.innerHTML = '';
-     });
+       document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
+         if (window.__musefarmPrivyBridge && window.__musefarmPrivyBridge.logout) window.__musefarmPrivyBridge.logout();
+         mount.innerHTML = '';
+       });
 
     document.getElementById('closeWalletDetailsBtn').addEventListener('click', function () { mount.innerHTML = ''; });
     document.getElementById('walletBackdrop').addEventListener('click', function (e) {
@@ -2271,63 +2385,87 @@
     });
   }
 
-   async function onWalletConnected(addr, type) {
-     userWallet = addr;
-     authType = type || 'bankr';
-     if (!getBankrApp()) {
-       showSigninGate('MUSEFARM live state is available only inside the Bankr app. No local game mode is enabled.', false);
+   function showPrivyWallet(detail) {
+     var gate = document.getElementById('signinGate');
+     var workspace = document.getElementById('gameWorkspace');
+     var title = document.getElementById('signinTitle');
+     var message = document.getElementById('signinMessage');
+     var options = document.getElementById('socialLoginOptions');
+     var note = document.querySelector('.signin-note');
+     var status = document.getElementById('privyWalletStatus');
+     var addressEl = document.getElementById('privyWalletAddress');
+     var explorer = document.getElementById('privyWalletExplorer');
+     var address = detail && detail.wallet && detail.wallet.address;
+     if (!address) {
+       showSigninGate('Privy signed you in, but the embedded wallet is still being created.', true);
        return;
      }
-     if (await loadLiveFarm(true)) {
-       refreshWalletBalance();
-       loadLeaderboard();
-       startLiveUpdates();
-       showBanner('Connected as ' + shortAddr(addr) + '. Live farm state is active.', 'info');
-     }
+     privyWallet = detail.wallet;
+     userWallet = address;
+     authType = 'privy';
+     if (gate) gate.style.display = 'block';
+     if (workspace) workspace.style.display = 'none';
+     if (title) title.textContent = 'Privy Wallet Ready';
+     if (message) message.textContent = 'Your X/Google account now has an embedded wallet connected to Base.';
+     if (options) options.style.display = 'none';
+     if (note) note.textContent = 'This wallet is controlled through your Privy account and can sign on-chain transactions.';
+     if (status) status.style.display = 'block';
+     if (addressEl) addressEl.textContent = address;
+     if (explorer) explorer.href = 'https://basescan.org/address/' + address;
+     document.getElementById('walletLabel').textContent = '🔐 ' + shortAddr(address);
+     refreshWalletBalance();
    }
 
-   async function startBankrSignIn(provider) {
-     if (!bankrApp || !bankrApp.auth) {
-       var unavailableMessage = document.getElementById('signinMessage');
-       if (unavailableMessage) unavailableMessage.textContent = 'Open MUSEFARM inside Bankr to complete ' + provider + ' sign-in securely.';
+   function handlePrivyState(event) {
+     var detail = event && event.detail ? event.detail : event;
+     if (!detail || !detail.ready || !detail.authenticated) {
+       showSigninGate(detail && !detail.ready ? 'Loading Privy securely...' : 'Choose X or Google to create your Privy wallet.', true);
        return;
      }
+     showPrivyWallet(detail);
+   }
+
+   function startPrivySignIn(provider) {
+     var providerKey = provider === 'X' ? 'twitter' : 'google';
      var buttons = [document.getElementById('signinX'), document.getElementById('signinGoogle')].filter(Boolean);
      buttons.forEach(function (button) { button.disabled = true; });
-     var messageEl = document.getElementById('signinMessage');
-     if (messageEl) messageEl.textContent = 'Opening secure Bankr sign-in...';
-     try {
-       // Bankr owns the OAuth provider dialog; the SDK currently exposes one secure sign-in entrypoint.
-       await bankrApp.auth.requireSignIn();
-       await onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr');
-     } catch (err) {
-       if (messageEl) messageEl.textContent = 'Choose X or Google to sign in securely through Bankr.';
-       showBanner((provider || 'Bankr') + ' sign-in cancelled or failed: ' + (err.message || err), 'error');
-     } finally {
-       buttons.forEach(function (button) { button.disabled = false; });
+     var message = document.getElementById('signinMessage');
+     if (message) message.textContent = 'Opening Privy ' + provider + ' sign-in...';
+     var bridge = window.__musefarmPrivyBridge;
+     if (bridge && bridge.login) {
+       Promise.resolve(bridge.login(providerKey)).catch(function (err) {
+         if (message) message.textContent = 'Choose X or Google to create your Privy wallet.';
+         showBanner((provider || 'Privy') + ' sign-in failed: ' + (err.message || err), 'error');
+       }).finally(function () {
+         buttons.forEach(function (button) { button.disabled = false; });
+       });
+     } else {
+       window.__musefarmPendingProvider = providerKey;
+       window.dispatchEvent(new CustomEvent('musefarm:privy-login', { detail: { provider: providerKey } }));
+       setTimeout(function () { buttons.forEach(function (button) { button.disabled = false; }); }, 1500);
      }
    }
 
-    async function boot() {
+   function handlePrivyError(event) {
+     var error = event && event.detail && event.detail.error;
+     var message = error && error.message ? error.message : String(error || 'Privy failed to initialize.');
+     showSigninGate('Privy could not finish login: ' + message, true);
+   }
+
+   async function boot() {
      setupTabs();
-     bankrApp = getBankrApp();
-     if (!bankrApp) {
-       showSigninGate('Open MUSEFARM inside the Bankr app to use synchronized farm state. No local or demo mode is enabled.', false);
-       return;
-     }
-
-      var signinX = document.getElementById('signinX');
-      var signinGoogle = document.getElementById('signinGoogle');
-      if (signinX) signinX.addEventListener('click', function () { startBankrSignIn('X'); });
-      if (signinGoogle) signinGoogle.addEventListener('click', function () { startBankrSignIn('Google'); });
-
-     var onReady = function () { onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr'); };
-     if (bankrApp.on) {
-       bankrApp.on('ready', onReady);
-       bankrApp.on('refresh', function () { loadLiveFarm(false); refreshWalletBalance(); });
-     }
-     if (bankrApp.auth && bankrApp.auth.isAuthenticated) onReady();
-     else showSigninGate('Sign in through Bankr to load your synchronized farm.', true);
+     window.addEventListener('musefarm:privy-state', handlePrivyState);
+     window.addEventListener('musefarm:privy-error', handlePrivyError);
+     var signinX = document.getElementById('signinX');
+     var signinGoogle = document.getElementById('signinGoogle');
+     if (signinX) signinX.addEventListener('click', function () { startPrivySignIn('X'); });
+     if (signinGoogle) signinGoogle.addEventListener('click', function () { startPrivySignIn('Google'); });
+     var logoutBtn = document.getElementById('privyLogoutBtn');
+     if (logoutBtn) logoutBtn.addEventListener('click', function () {
+       if (window.__musefarmPrivyBridge && window.__musefarmPrivyBridge.logout) window.__musefarmPrivyBridge.logout();
+     });
+     if (window.__musefarmPrivyState) handlePrivyState({ detail: window.__musefarmPrivyState });
+     else showSigninGate('Loading Privy securely...', true);
    }
 
   window.addEventListener('DOMContentLoaded', boot);

@@ -1,0 +1,1459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>MUSEFARM</title>
+<style>
+  :root {
+    --soil-dark: #241710;
+    --soil-mid: #483222;
+    --soil-light: #6a4c33;
+    --leaf: #38a169;
+    --leaf-bright: #48bb78;
+    --leaf-dark: #22543d;
+    --gold: #ecc94b;
+    --gold-bright: #f6e05e;
+    --gold-dark: #b7791f;
+    --sky-top: #dbeafe;
+    --sky-mid: #fef3c7;
+    --sky-bottom: #fde68a;
+    --card-bg: rgba(255, 253, 247, 0.96);
+    --card-border: #e2d3b5;
+    --ink: #2d3748;
+    --ink-muted: #718096;
+    --danger: #e53e3e;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-soft: 0 6px 20px rgba(45, 33, 20, 0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+  #app {
+    min-height: 100vh; padding: 12px 10px; display: flex; flex-direction: column; gap: 12px;
+    max-width: 1240px; margin: 0 auto; width: 100%; box-sizing: border-box;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-lg);
+    padding: 14px; box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
+    box-sizing: border-box; width: 100%;
+  }
+  .card-title {
+    margin: 0 0 10px; font-size: 13px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--leaf-dark); display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* Top Bar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-lg);
+    padding: 10px 14px; box-shadow: var(--shadow-soft); backdrop-filter: blur(8px);
+    box-sizing: border-box; width: 100%;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .logo { font-size: 32px; filter: drop-shadow(1px 2px 2px rgba(183,121,31,0.3)); line-height: 1; flex-shrink: 0; }
+  .brand-meta { display: flex; flex-direction: column; gap: 3px; }
+  .brand-title-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .brand h1 {
+    margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.5px;
+    background: linear-gradient(135deg, var(--leaf-dark), #1c4532);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .badges-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .badge-rh {
+    font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #00c805, #008f04);
+    color: #fff; padding: 2px 7px; border-radius: 12px; letter-spacing: 0.4px;
+    box-shadow: 0 2px 4px rgba(0,200,5,0.25); white-space: nowrap;
+  }
+  .badge-rail {
+    font-size: 10px; font-weight: 700; background: #0052ff; color: #fff;
+    padding: 2px 7px; border-radius: 12px; white-space: nowrap;
+  }
+
+  /* Stats grid */
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .stat-chip {
+    display: flex; align-items: center; gap: 6px; background: #fffbf0;
+    border: 1.5px solid var(--card-border); border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.02); white-space: nowrap;
+    box-sizing: border-box;
+  }
+  .stat-chip .val { color: var(--gold-dark); font-weight: 800; }
+  .wallet-chip {
+    font-size: 11px; font-weight: 600; color: var(--ink-muted); background: #f3ede2;
+    border-radius: 20px; padding: 5px 10px; font-family: monospace; border: 1px solid var(--card-border);
+    white-space: nowrap; box-sizing: border-box;
+  }
+
+  /* Responsive Grid Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px minmax(320px, 1fr) 330px;
+    gap: 12px;
+    width: 100%;
+    align-items: start;
+    box-sizing: border-box;
+  }
+
+  /* Farmer Profile Component */
+  .farmer-card { width: 100%; box-sizing: border-box; }
+  .farmer-body {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    width: 100%; box-sizing: border-box;
+  }
+  .farmer-avatar-frame {
+    width: 100%; max-width: 180px; aspect-ratio: 1 / 1;
+    margin: 0 auto 12px; border-radius: var(--radius-md);
+    background: radial-gradient(circle at 50% 30%, #fffdf5, #fef3c7);
+    border: 3px solid #fff; box-shadow: 0 4px 14px rgba(183,121,31,0.2);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative; cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box; flex-shrink: 0;
+  }
+  .farmer-avatar-frame:hover { transform: translateY(-2px); }
+  .farmer-avatar-frame img {
+    width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 9px;
+  }
+  .farmer-avatar-frame .zoom-hint {
+    position: absolute; bottom: 4px; right: 4px;
+    background: rgba(36, 23, 16, 0.75); color: #fff; font-size: 9px; font-weight: 700;
+    padding: 2px 6px; border-radius: 6px; backdrop-filter: blur(4px); pointer-events: none;
+  }
+  .farmer-avatar-frame .fallback { font-size: 52px; }
+
+  .farmer-details-wrap { width: 100%; box-sizing: border-box; }
+  .farmer-title { font-weight: 900; font-size: 15px; margin-bottom: 2px; color: var(--ink); }
+  .farmer-rank { font-size: 11px; font-weight: 700; color: var(--gold-dark); margin-bottom: 10px; }
+
+  .farmer-bars-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .bar-container { width: 100%; }
+  .bar-header { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; color: var(--ink-muted); margin-bottom: 3px; }
+  .progress-track {
+    height: 8px; background: #ebdcc2; border-radius: 8px; overflow: hidden;
+    border: 1px solid #d8c29e; position: relative; width: 100%;
+  }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #48bb78, #2f855a); transition: width 0.3s ease; }
+  .progress-fill.gold { background: linear-gradient(90deg, #ecc94b, #b7791f); }
+  .meta-sub { font-size: 10px; color: var(--ink-muted); text-align: center; margin-top: 2px; }
+
+  /* Farm Plots Grid */
+  .farm-container { display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; box-sizing: border-box; }
+  .farm-header-wrap { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  .farm-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+  .farm-subtitle-row { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 11px; font-weight: 700; }
+  #noticeBanner { width: 100%; }
+
+  .grid-wrapper { width: 100%; display: flex; justify-content: center; }
+  .grid-container {
+    display: grid; gap: 8px;
+    background: var(--soil-dark); padding: 12px; border-radius: var(--radius-md);
+    border: 3px solid #170d08; box-shadow: inset 0 4px 14px rgba(0,0,0,0.45);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%; max-width: 440px; margin: 0 auto; box-sizing: border-box;
+  }
+  .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+  .plot {
+    aspect-ratio: 1 / 1; border-radius: 10px; position: relative; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    background: linear-gradient(180deg, var(--soil-mid), var(--soil-dark));
+    border: 2px dashed #5c412e; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #f7fafc; user-select: none; text-align: center; box-sizing: border-box;
+    width: 100%; min-width: 0; min-height: 0; padding: 4px; overflow: hidden;
+  }
+  .grid-cols-4 .plot { border-radius: 8px; }
+  .grid-cols-5 .plot { border-radius: 6px; }
+
+  .plot:hover { transform: scale(1.02); }
+  .plot.empty:hover { border-color: var(--gold); background: #523826; }
+  .plot.empty .plot-icon { font-size: 26px; opacity: 0.55; color: #d69e2e; line-height: 1; }
+  .grid-cols-4 .plot.empty .plot-icon { font-size: 20px; }
+  .grid-cols-5 .plot.empty .plot-icon { font-size: 16px; }
+  .plot.empty .plot-sub { font-size: 9px; color: #a0aec0; margin-top: 2px; font-weight: 700; letter-spacing: 0.5px; }
+  .grid-cols-4 .plot.empty .plot-sub { font-size: 8px; }
+  .grid-cols-5 .plot.empty .plot-sub { font-size: 7px; }
+
+  .plot.growing {
+    background: linear-gradient(180deg, #27471e, #1c3315);
+    border: 2px solid #48bb78; box-shadow: 0 4px 12px rgba(72,187,120,0.2);
+  }
+  .plot.growing .plot-icon { font-size: 30px; animation: pulseGrowth 2s ease-in-out infinite; line-height: 1; }
+  .grid-cols-4 .plot.growing .plot-icon { font-size: 24px; }
+  .grid-cols-5 .plot.growing .plot-icon { font-size: 18px; }
+  @keyframes pulseGrowth { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+  .plot.ready {
+    background: linear-gradient(180deg, #d69e2e, #b7791f);
+    border: 2px solid #f6e05e; color: #1a202c;
+    animation: readyShine 1.5s infinite alternate;
+  }
+  @keyframes readyShine {
+    0% { box-shadow: 0 0 4px #ecc94b; }
+    100% { box-shadow: 0 0 16px #ecc94b, 0 0 24px rgba(236,201,75,0.6); }
+  }
+  .plot.ready .plot-icon { font-size: 32px; animation: bounceHarvest 0.8s ease infinite; line-height: 1; }
+  .grid-cols-4 .plot.ready .plot-icon { font-size: 26px; }
+  .grid-cols-5 .plot.ready .plot-icon { font-size: 20px; }
+  @keyframes bounceHarvest { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+  .plot .plot-tag {
+    font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px;
+    margin-top: 3px; letter-spacing: 0.5px; max-width: 92%; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
+  }
+  .grid-cols-4 .plot .plot-tag { font-size: 8px; padding: 1px 4px; margin-top: 2px; }
+  .grid-cols-5 .plot .plot-tag { font-size: 7px; padding: 1px 3px; margin-top: 1px; }
+  .plot.ready .plot-tag { background: #fff; color: #744210; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+  .plot.growing .plot-tag { background: rgba(0,0,0,0.5); color: #9ae6b4; font-family: monospace; }
+
+  /* Floating text */
+  .float-msg {
+    position: fixed; z-index: 999; font-weight: 900; color: #22543d; pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards; font-size: 16px; text-shadow: 0 2px 4px #fff;
+  }
+  @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-50px) scale(1.15); } }
+
+  /* Tabs */
+  .tab-nav {
+    display: flex; gap: 4px; border-bottom: 2px solid var(--card-border);
+    margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: transparent; border: none; padding: 8px 10px; font-size: 11.5px; font-weight: 800;
+    cursor: pointer; color: var(--ink-muted); border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    position: relative; transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--leaf-dark); background: rgba(56,161,105,0.1); }
+  .tab-btn.active::after {
+    content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px;
+    background: var(--leaf);
+  }
+
+  /* Seed Shop */
+  .shop-scroll { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; padding-right: 2px; }
+  .seed-item {
+    display: flex; align-items: center; gap: 10px; background: #fff;
+    border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
+    padding: 8px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: transform 0.15s, border-color 0.15s; width: 100%; box-sizing: border-box;
+  }
+  .seed-item:hover { border-color: var(--gold-dark); }
+  .seed-emoji { font-size: 26px; line-height: 1; flex-shrink: 0; }
+  .seed-details { flex: 1; min-width: 0; }
+  .seed-name-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .seed-name { font-weight: 800; font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seed-price-tag { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 12px; white-space: nowrap; }
+  .seed-price-tag.free { background: #c6f6d5; color: #22543d; }
+  .seed-price-tag.paid { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+  .seed-meta { font-size: 10px; color: var(--ink-muted); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .seed-owned { font-weight: 700; color: var(--gold-dark); }
+  .buy-btn {
+    background: linear-gradient(135deg, var(--leaf-bright), var(--leaf)); color: #fff;
+    border: none; border-radius: var(--radius-sm); padding: 6px 12px; font-size: 11px;
+    font-weight: 800; cursor: pointer; box-shadow: 0 2px 6px rgba(56,161,105,0.3);
+    transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .buy-btn:hover { background: linear-gradient(135deg, var(--leaf), var(--leaf-dark)); transform: translateY(-1px); }
+  .buy-btn:disabled { background: #cbd5e0; cursor: not-allowed; box-shadow: none; color: #718096; }
+  .buy-btn.x402-btn {
+    background: linear-gradient(135deg, #3182ce, #2b6cb0);
+    box-shadow: 0 2px 6px rgba(49,130,206,0.3);
+  }
+  .buy-btn.x402-btn:hover { background: linear-gradient(135deg, #2b6cb0, #2c5282); }
+
+  /* Seed Upgrade / Synthesis Cards */
+  .recipe-card {
+    background: #fff; border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
+    padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: border-color 0.15s; width: 100%; box-sizing: border-box;
+  }
+  .recipe-card:hover { border-color: var(--gold-dark); }
+  .recipe-flow {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;
+  }
+  .recipe-side {
+    display: flex; align-items: center; gap: 6px; flex: 1 1 45%; min-width: 0;
+  }
+  .recipe-arrow {
+    font-size: 16px; font-weight: 900; color: var(--gold-dark); flex-shrink: 0; padding: 0 2px;
+  }
+  .recipe-actions {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    border-top: 1px dashed #e2d3b5; padding-top: 8px; width: 100%;
+  }
+  .recipe-owned-tag {
+    font-size: 11px; font-weight: 700; color: var(--ink-muted);
+  }
+  .recipe-owned-tag .highlight {
+    color: var(--gold-dark); font-weight: 800;
+  }
+  .craft-btn-group { display: flex; gap: 6px; flex-shrink: 0; }
+  .craft-btn {
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-dark)); color: #241710;
+    border: none; border-radius: var(--radius-sm); padding: 5px 10px; font-size: 11px;
+    font-weight: 800; cursor: pointer; box-shadow: 0 2px 5px rgba(214,158,46,0.3);
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .craft-btn:hover { background: linear-gradient(135deg, #f6e05e, #ecc94b); transform: translateY(-1px); }
+  .craft-btn:disabled { background: #cbd5e0; color: #718096; cursor: not-allowed; box-shadow: none; transform: none; }
+  .craft-btn.max-btn {
+    background: linear-gradient(135deg, var(--leaf-bright), var(--leaf)); color: #fff;
+    box-shadow: 0 2px 5px rgba(56,161,105,0.3);
+  }
+  .craft-btn.max-btn:hover { background: linear-gradient(135deg, var(--leaf), var(--leaf-dark)); }
+
+  /* Upgrade Cards */
+  .upgrade-card {
+    background: #fff; border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
+    padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: border-color 0.15s; width: 100%; box-sizing: border-box;
+  }
+  .upgrade-card:hover { border-color: var(--gold-dark); }
+  .upgrade-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+  .upgrade-title { font-weight: 800; font-size: 13px; color: var(--leaf-dark); }
+  .upgrade-price { font-weight: 800; font-size: 11px; color: #2b6cb0; background: #ebf8ff; padding: 2px 7px; border-radius: 12px; border: 1px solid #bee3f8; }
+  .upgrade-desc { font-size: 11px; color: var(--ink-muted); line-height: 1.4; }
+  .upgrade-btn {
+    background: linear-gradient(135deg, #d69e2e, #b7791f); color: #fff;
+    border: none; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 11px;
+    font-weight: 800; cursor: pointer; box-shadow: 0 2px 6px rgba(183,121,31,0.3);
+    transition: all 0.15s; text-align: center; width: 100%;
+  }
+  .upgrade-btn:hover { background: linear-gradient(135deg, #b7791f, #975a16); transform: translateY(-1px); }
+  .upgrade-btn:disabled { background: #cbd5e0; cursor: not-allowed; box-shadow: none; color: #718096; }
+
+  /* Leaderboard Table */
+  .lb-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .lb-table th { text-align: left; color: var(--ink-muted); font-size: 11px; text-transform: uppercase; padding: 6px 8px; border-bottom: 2px solid var(--card-border); }
+  .lb-table td { padding: 8px; border-bottom: 1px solid #ede1cb; }
+  .lb-table tr:first-child td { font-weight: 800; color: #975a16; background: #fffaf0; }
+
+  /* Treasury & Token Tab */
+  .treasury-box {
+    background: #fff; border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
+    padding: 12px; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box;
+  }
+  .treasury-header { display: flex; align-items: center; justify-content: space-between; }
+  .treasury-badge {
+    font-size: 10px; font-weight: 800; background: #fefcbf; color: #744210;
+    padding: 3px 8px; border-radius: 12px; border: 1px solid #faf089;
+  }
+  .mechanism-card {
+    background: #f0fff4; border: 1px solid #c6f6d5; border-radius: var(--radius-sm);
+    padding: 9px; font-size: 11px; color: #22543d; line-height: 1.5;
+  }
+  .claim-action-box { text-align: center; padding: 8px 0; }
+  .claim-action-box .claim-btn {
+    width: 100%; background: #cbd5e0; color: #4a5568; border: none;
+    padding: 9px; border-radius: var(--radius-sm); font-weight: 800; cursor: not-allowed;
+    font-size: 12px;
+  }
+
+  /* Modals */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(20, 15, 5, 0.65); display: flex; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px); padding: 12px;
+  }
+  .modal-card {
+    background: var(--card-bg); border-radius: var(--radius-lg); border: 2px solid var(--card-border);
+    padding: 18px; width: 360px; max-width: 95vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 16px 36px rgba(0,0,0,0.25);
+  }
+  .modal-card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 800; color: var(--leaf-dark); }
+  .modal-seed-opt {
+    display: flex; align-items: center; justify-content: space-between; padding: 8px 10px;
+    border-radius: var(--radius-sm); border: 1.5px solid var(--card-border); margin-bottom: 6px;
+    cursor: pointer; background: #fff; transition: all 0.15s;
+  }
+  .modal-seed-opt:hover { background: #fffdf5; border-color: var(--gold-dark); transform: scale(1.01); }
+  .modal-seed-opt.disabled { opacity: 0.45; cursor: not-allowed; background: #edf2f7; }
+  .modal-close {
+    width: 100%; padding: 8px; border-radius: var(--radius-sm); border: none;
+    background: #e2d3b5; font-weight: 800; cursor: pointer; margin-top: 6px;
+  }
+  .modal-close:hover { background: #d4be94; }
+
+  /* Full Image Lightbox Modal */
+  .lightbox-card {
+    background: #241710; border-radius: var(--radius-lg); border: 2px solid var(--gold-dark);
+    padding: 14px; width: 440px; max-width: 92vw; max-height: 90vh; display: flex; flex-direction: column;
+    align-items: center; box-shadow: 0 20px 48px rgba(0,0,0,0.5); text-align: center;
+  }
+  .lightbox-card img {
+    width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md);
+    background: radial-gradient(circle at 50% 50%, #3e2819, #1c1109);
+  }
+  .lightbox-card .lightbox-title {
+    color: var(--gold-bright); font-weight: 800; font-size: 14px; margin-top: 10px; margin-bottom: 2px;
+  }
+  .lightbox-card .lightbox-desc {
+    color: #e2d3b5; font-size: 11px; margin-bottom: 10px;
+  }
+
+  /* Banners */
+  .banner-box { padding: 9px 12px; border-radius: var(--radius-md); font-size: 11px; font-weight: 600; margin-bottom: 8px; width: 100%; }
+  .banner-box.error { background: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; }
+  .banner-box.info { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
+
+  /* Sign-in Gate */
+  .signin-panel { text-align: center; padding: 50px 20px; max-width: 460px; margin: 30px auto; }
+  .signin-panel h2 { font-size: 22px; font-weight: 900; color: var(--leaf-dark); margin: 12px 0 6px; }
+  .signin-panel p { font-size: 13px; color: var(--ink-muted); margin-bottom: 18px; }
+  .signin-btn {
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-dark));
+    color: #2d3748; font-weight: 900; font-size: 14px; padding: 10px 24px;
+    border-radius: var(--radius-md); border: 2px solid #b7791f; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(183,121,31,0.3); transition: all 0.2s;
+  }
+  .signin-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(183,121,31,0.4); }
+
+  /* ==========================================================================
+     SYMMETRICAL RESPONSIVE BREAKPOINTS (Mobile & Tablet Perfection)
+     ========================================================================== */
+
+  /* Tablet / Medium Screens (768px to 1024px) */
+  @media (max-width: 1024px) and (min-width: 768px) {
+    .layout {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .farmer-card {
+      grid-column: 1 / -1;
+    }
+    .farmer-body {
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      text-align: left;
+    }
+    .farmer-avatar-frame {
+      width: 120px;
+      height: 120px;
+      margin: 0;
+    }
+    .farmer-bars-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+  }
+
+  /* Mobile / Small Screens (< 768px) */
+  @media (max-width: 767px) {
+    #app {
+      padding: 8px;
+      gap: 10px;
+    }
+    .card {
+      padding: 12px 10px;
+      border-radius: var(--radius-md);
+    }
+
+    /* Symmetrical Top Bar */
+    .topbar {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+      gap: 10px;
+    }
+    .brand {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+    }
+    .brand-meta {
+      align-items: center;
+      text-align: center;
+    }
+    .brand-title-wrap {
+      justify-content: center;
+    }
+    .badges-row {
+      justify-content: center;
+    }
+
+    /* Balanced 3-column stats with centered wallet pill */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .stat-chip {
+      padding: 5px 4px;
+      font-size: 11px;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+    }
+    .wallet-chip {
+      grid-column: 1 / -1;
+      width: 100%;
+      text-align: center;
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+
+    /* Single column layout with clean vertical stack */
+    .layout {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    /* Symmetrical Farmer Profile Card on Mobile */
+    .farmer-body {
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+      width: 100%;
+    }
+    .farmer-avatar-frame {
+      width: 92px;
+      height: 92px;
+      max-width: 92px;
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .farmer-details-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    .farmer-title { font-size: 14px; }
+    .farmer-rank { font-size: 11px; margin-bottom: 6px; }
+    .farmer-bars-grid { gap: 6px; }
+    .bar-header { font-size: 10px; margin-bottom: 2px; }
+    .progress-track { height: 7px; }
+    .meta-sub { font-size: 9.5px; text-align: left; margin-top: 1px; }
+
+    /* Centered Plots Grid on Mobile */
+    .grid-container {
+      padding: 8px;
+      gap: 6px;
+      max-width: 360px;
+    }
+
+    /* Synthesis / Recipes cards symmetrical adjustments */
+    .recipe-card {
+      padding: 8px 10px;
+      gap: 6px;
+    }
+    .recipe-actions {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .craft-btn {
+      padding: 5px 8px;
+      font-size: 10.5px;
+    }
+  }
+
+  /* Ultra-small screens (< 360px) */
+  @media (max-width: 359px) {
+    .farmer-avatar-frame {
+      width: 80px;
+      height: 80px;
+      max-width: 80px;
+    }
+    .stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Symmetrical Top Bar -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo">🌾</span>
+      <div class="brand-meta">
+        <div class="brand-title-wrap">
+          <h1>MUSEFARM</h1>
+        </div>
+        <div class="badges-row">
+          <span class="badge-rh">ROBINHOOD CHAIN</span>
+          <span class="badge-rail">x402 USDC on Base</span>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat-chip">💰 <span class="val" id="musePoints">--</span> MUSE</div>
+      <div class="stat-chip">⭐ Lv <span class="val" id="farmerLevel">--</span></div>
+      <div class="stat-chip">⚡ <span class="val" id="staminaPoints">--</span>/<span id="staminaMax">20</span></div>
+      <div class="wallet-chip" id="walletLabel">connecting...</div>
+    </div>
+  </div>
+
+  <div id="mainContainer">
+    <!-- Sign In Gate -->
+    <div class="card signin-panel" id="signinGate" style="display:none;">
+      <div style="font-size:48px;">🚜</div>
+      <h2>Connect to MUSEFARM</h2>
+      <p>Your plots, harvested crops, and treasury allocations are saved directly to your wallet on Robinhood Chain.</p>
+      <button class="signin-btn" id="signinAction">Enter Farm</button>
+    </div>
+
+    <!-- Game Workspace -->
+    <div class="layout" id="gameWorkspace" style="display:none;">
+      <!-- Farmer Profile Card -->
+      <div class="card farmer-card">
+        <div class="card-title">
+          <span>Farmer Profile</span>
+          <span style="font-size:10px; color:var(--ink-muted);" id="lastSyncTime">LIVE</span>
+        </div>
+
+        <div class="farmer-body">
+          <!-- Full Uncut Avatar Frame with Zoom Lightbox -->
+          <div class="farmer-avatar-frame" id="farmerAvatarFrame" title="Click to view full uncropped artwork">
+            <img id="farmerAvatar" src="https://cdn.phototourl.com/free/2026-09-17-3e6a5bd9-0bb7-40b9-a276-bfc3883a97e8.png" alt="farmer"
+                 onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='flex';" />
+            <div class="fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">👩‍🌾</div>
+            <span class="zoom-hint">🔍 Zoom</span>
+          </div>
+
+          <div class="farmer-details-wrap">
+            <div class="farmer-title" id="farmerTitle">Master Harvester</div>
+            <div class="farmer-rank" id="farmerSubrank">Level 1 Harvester</div>
+
+            <div class="farmer-bars-grid">
+              <div class="bar-container">
+                <div class="bar-header">
+                  <span>Stamina</span>
+                  <span id="staminaHeader">20/20</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="staminaProgress" style="width:100%;"></div>
+                </div>
+                <div class="meta-sub" id="staminaCountdown">Stamina Full</div>
+              </div>
+
+              <div class="bar-container">
+                <div class="bar-header">
+                  <span>Harvest Mastery</span>
+                  <span id="harvestHeader">0 Harvested</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill gold" id="harvestProgress" style="width:0%;"></div>
+                </div>
+                <div class="meta-sub" id="nextLevelEta">100 to Lv 2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Column: Farm Grid -->
+      <div class="card farm-container">
+        <div class="farm-header-wrap">
+          <div class="farm-title-row">
+            <span style="font-size:13px; font-weight:800; text-transform:uppercase; color:var(--leaf-dark); letter-spacing:0.8px;">
+              Active Plots (<span id="gridTitle">3x3</span>)
+            </span>
+            <button id="quickUpgradeBtn" style="background:#fefcbf; border:1px solid #faf089; border-radius:12px; padding:3px 10px; font-size:11px; font-weight:800; color:#744210; cursor:pointer;">🏗️ Land Upgrade</button>
+          </div>
+          <div class="farm-subtitle-row">
+            <span style="color:var(--leaf);">Tap plot to Plant or Harvest</span>
+            <span style="color:var(--ink-muted); font-size:10px;">Robinhood Chain State</span>
+          </div>
+        </div>
+
+        <div id="noticeBanner"></div>
+        <div class="grid-wrapper">
+          <div class="grid-container grid-cols-3" id="plotGrid"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Tabs (Shop / Seed Upgrade / Land Upgrade / Leaderboard / Treasury) -->
+      <div class="card">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="shop">Seed Shop</button>
+          <button class="tab-btn" data-tab="synthesis">✨ Seed Upgrade</button>
+          <button class="tab-btn" data-tab="upgrade">Land Upgrade</button>
+          <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
+          <button class="tab-btn" data-tab="treasury">Rewards & $MUSEFARM</button>
+        </div>
+
+        <!-- Shop Tab -->
+        <div id="tabShop">
+          <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
+            Free Wheat capped at <strong>10x per day</strong>. Premium seeds are <strong>permanent & reusable</strong> (seed returns to your inventory on harvest so you can replant forever!) and settle via <strong>x402 USDC on Base</strong>.
+          </div>
+          <div class="shop-scroll" id="seedShopList"></div>
+        </div>
+
+        <!-- Seed Upgrade / Synthesis Tab -->
+        <div id="tabSynthesis" style="display:none;">
+          <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
+            🌾 <strong>Upgrade Seeds from Harvested Crops</strong>: Seeds can only be upgraded using crops you have <strong>already harvested</strong> from your farm.
+          </div>
+          <div class="shop-scroll" id="synthesisList"></div>
+        </div>
+
+        <!-- Land Upgrade Tab -->
+        <div id="tabUpgrade" style="display:none;">
+          <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
+            Expand your farm territory on Robinhood Chain! Upgrades settle via <strong>x402 USDC on Base</strong> straight to creator wallet.
+          </div>
+          <div id="upgradeList"></div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div id="tabLeaderboard" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:11px; color:var(--ink-muted);">Top 20 Harvesters on Robinhood Chain</span>
+            <button id="refreshLbBtn" style="background:#fff; border:1px solid var(--card-border); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; color:var(--leaf-dark);">🔄 Refresh</button>
+          </div>
+          <table class="lb-table">
+            <thead>
+              <tr><th>#</th><th>Farmer</th><th>Lv</th><th>Harvested</th></tr>
+            </thead>
+            <tbody id="lbTableBody">
+              <tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Loading leaderboard standings...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Treasury & Token Tab -->
+        <div id="tabTreasury" style="display:none;">
+          <div class="treasury-box">
+            <div class="treasury-header">
+              <span style="font-size:12px; font-weight:800; color:var(--leaf-dark);">🏛️ Rewards & Claims</span>
+              <span class="treasury-badge">Merkle Vault</span>
+            </div>
+
+            <div class="mechanism-card">
+              <strong>Conversion Rate & Reward Mechanism:</strong><br/>
+              • <strong>1 MUSE = 2 $MUSEFARM</strong> token rewards.<br/>
+              • Every crop harvested generates MUSE points that accumulate in real-time.<br/>
+              • Total $MUSEFARM token allocation is calculated at 2x your harvested MUSE points.<br/>
+              • Direct onchain claims will unlock via a Merkle-Drop Distributor contract on Robinhood Chain upon token launch.
+            </div>
+
+            <div>
+              <div style="font-size:11px; font-weight:700; color:var(--ink-muted); margin-bottom:4px;">YOUR CURRENT ALLOCATION</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#f7fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0;">
+                <div>
+                  <div style="font-size:13px; font-weight:800; color:var(--gold-dark);" id="userHarvestAllocation">0 MUSE Harvested</div>
+                  <div style="font-size:11px; font-weight:700; color:var(--leaf-dark); margin-top:2px;" id="userTokenAllocation">≈ 0 $MUSEFARM (1:2 Rate)</div>
+                </div>
+                <span style="font-size:11px; font-weight:700; color:var(--leaf);" id="userPercentShare">Ready for Claim</span>
+              </div>
+            </div>
+
+            <div class="claim-action-box">
+              <button class="claim-btn" disabled id="claimTokenBtn">Claim Distributing Soon</button>
+              <div style="font-size:10px; color:var(--ink-muted); margin-top:6px;">
+                Merkle distributor contract will be deployed upon token launch. All harvest scores are permanently recorded.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="plantModalMount"></div>
+  <div id="lightboxMount"></div>
+</div>
+
+<script>
+(function () {
+  var state = null;
+  var seedConfig = null;
+  var seedRecipes = null;
+  var gridConfig = null;
+  var maxStamina = 20;
+  var staminaRegenMs = 180000;
+  var currentPlot = null;
+  var tickInterval = null;
+
+  var DEFAULT_RECIPES = [
+    { from: 'wheat', fromQty: 10, to: 'corn', toQty: 1, name: 'Sweet Corn', emoji: '🌽', desc: '10 Harvested Wheat ➔ 1 Sweet Corn Seed' },
+    { from: 'corn', fromQty: 5, to: 'berry', toQty: 1, name: 'Golden Berry', emoji: '🫐', desc: '5 Harvested Corn ➔ 1 Golden Berry Seed' },
+    { from: 'berry', fromQty: 4, to: 'melon', toQty: 1, name: 'Celestial Melon', emoji: '🍈', desc: '4 Harvested Berry ➔ 1 Celestial Melon Seed' },
+    { from: 'melon', fromQty: 3, to: 'truffle', toQty: 1, name: 'Royal Truffle', emoji: '🍄', desc: '3 Harvested Melon ➔ 1 Royal Truffle Seed' },
+    { from: 'truffle', fromQty: 3, to: 'sunflower', toQty: 1, name: 'Mythic Sunflower', emoji: '🌻', desc: '3 Harvested Truffle ➔ 1 Mythic Sunflower Seed' },
+    { from: 'sunflower', fromQty: 2, to: 'dragonfruit', toQty: 1, name: 'Mythic Dragon Fruit', emoji: '🐲', desc: '2 Harvested Sunflower ➔ 1 Mythic Dragon Fruit Seed' },
+    { from: 'dragonfruit', fromQty: 2, to: 'lotus', toQty: 1, name: 'Cosmic Lotus', emoji: '🪷', desc: '2 Harvested Dragon Fruit ➔ 1 Cosmic Lotus Seed' }
+  ];
+
+  function shortAddr(a) {
+    if (!a) return '';
+    return a.slice(0, 6) + '…' + a.slice(-4);
+  }
+
+  function showBanner(text, type) {
+    var b = document.getElementById('noticeBanner');
+    b.innerHTML = '<div class="banner-box ' + (type || 'info') + '">' + text + '</div>';
+    setTimeout(function () { if (b.firstChild) b.innerHTML = ''; }, 4000);
+  }
+
+  function spawnFloatText(targetEl, text) {
+    var rect = targetEl ? targetEl.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0 };
+    var el = document.createElement('div');
+    el.className = 'float-msg';
+    el.textContent = text;
+    el.style.left = (rect.left + rect.width / 2 - 24) + 'px';
+    el.style.top = rect.top + 'px';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 1200);
+  }
+
+  function fmtTime(ms) {
+    if (ms <= 0) return 'READY';
+    var s = Math.ceil(ms / 1000);
+    var m = Math.floor(s / 60);
+    var remS = s % 60;
+    if (m >= 60) {
+      var h = Math.floor(m / 60);
+      return h + 'h ' + (m % 60) + 'm';
+    }
+    return m + 'm ' + (remS < 10 ? '0' : '') + remS + 's';
+  }
+
+  function getRankName(lvl) {
+    if (lvl >= 10) return 'Mythic Harvester';
+    if (lvl >= 7) return 'Master Agronomist';
+    if (lvl >= 5) return 'Expert Farmer';
+    if (lvl >= 3) return 'Skilled Cultivator';
+    return 'Novice Harvester';
+  }
+
+  function fmtGrowDuration(ms) {
+    var mins = ms / 60000;
+    if (mins < 60) {
+      return (mins % 1 === 0 ? mins : mins.toFixed(1)) + 'm';
+    }
+    var hrs = mins / 60;
+    return (hrs % 1 === 0 ? hrs : hrs.toFixed(1)) + 'h';
+  }
+
+  function openAvatarLightbox() {
+    var mount = document.getElementById('lightboxMount');
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="lbBackdrop">' +
+        '<div class="lightbox-card">' +
+          '<img src="https://cdn.phototourl.com/free/2026-09-17-3e6a5bd9-0bb7-40b9-a276-bfc3883a97e8.png" alt="Farmer Full Artwork" />' +
+          '<div class="lightbox-title">🌾 MUSEFARM Official Avatar</div>' +
+          '<div class="lightbox-desc">Full 1277×1277 High Resolution Artwork</div>' +
+          '<button class="modal-close" id="lbCloseBtn">Close View</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('lbCloseBtn').addEventListener('click', function () { mount.innerHTML = ''; });
+    document.getElementById('lbBackdrop').addEventListener('click', function (e) {
+      if (e.target.id === 'lbBackdrop') mount.innerHTML = '';
+    });
+  }
+
+  function renderProfile() {
+    document.getElementById('musePoints').textContent = state.muse;
+    document.getElementById('farmerLevel').textContent = state.level;
+    document.getElementById('staminaPoints').textContent = state.stamina;
+    document.getElementById('staminaMax').textContent = maxStamina;
+
+    document.getElementById('farmerTitle').textContent = getRankName(state.level);
+    document.getElementById('farmerSubrank').textContent = 'Level ' + state.level + ' · ' + state.totalHarvested + ' Total Harvested';
+    document.getElementById('staminaHeader').textContent = state.stamina + '/' + maxStamina;
+    document.getElementById('staminaProgress').style.width = Math.round((state.stamina / maxStamina) * 100) + '%';
+
+    var nextLvlAt = state.level * 100;
+    var prevLvlAt = (state.level - 1) * 100;
+    var currentProg = state.totalHarvested - prevLvlAt;
+    var progPct = Math.min(100, Math.max(0, Math.round((currentProg / 100) * 100)));
+    document.getElementById('harvestProgress').style.width = progPct + '%';
+    document.getElementById('harvestHeader').textContent = state.totalHarvested + ' MUSE';
+    document.getElementById('nextLevelEta').textContent = Math.max(0, nextLvlAt - state.totalHarvested) + ' MUSE to Lv ' + (state.level + 1);
+
+    if (state.stamina < maxStamina) {
+      var diff = state.staminaUpdatedAt + staminaRegenMs - Date.now();
+      document.getElementById('staminaCountdown').textContent = '+1 Stamina in ' + fmtTime(diff);
+    } else {
+      document.getElementById('staminaCountdown').textContent = '⚡ Full Stamina';
+    }
+
+    if (state.walletAddress) {
+      document.getElementById('walletLabel').textContent = shortAddr(state.walletAddress);
+      document.getElementById('userHarvestAllocation').textContent = state.totalHarvested + ' MUSE Harvested';
+      var farmTokens = (state.totalHarvested || 0) * 2;
+      var allocEl = document.getElementById('userTokenAllocation');
+      if (allocEl) allocEl.textContent = '≈ ' + farmTokens.toLocaleString() + ' $MUSEFARM (1:2 Rate)';
+    }
+  }
+
+  function renderPlots() {
+    var currentSize = (state && state.gridSize) || 3;
+    var grid = document.getElementById('plotGrid');
+    grid.className = 'grid-container grid-cols-' + currentSize;
+
+    var titleEl = document.getElementById('gridTitle');
+    if (titleEl) titleEl.textContent = currentSize + 'x' + currentSize;
+
+    grid.innerHTML = '';
+    state.plots.forEach(function (plot) {
+      var div = document.createElement('div');
+      div.className = 'plot ' + plot.state;
+
+      if (plot.state === 'empty') {
+        div.innerHTML = '<div class="plot-icon">+</div><div class="plot-sub">EMPTY</div>';
+      } else if (plot.state === 'growing') {
+        var cfg = (seedConfig && seedConfig[plot.seedType]) || {};
+        var rem = (plot.plantedAt + (cfg.growMs || 0)) - Date.now();
+        div.innerHTML =
+          '<div class="plot-icon">' + (cfg.emoji || '🌱') + '</div>' +
+          '<div class="plot-tag" data-plot-plant="' + plot.plantedAt + '" data-plot-grow="' + (cfg.growMs || 0) + '">' + fmtTime(rem) + '</div>';
+      } else if (plot.state === 'ready') {
+        var cfg2 = (seedConfig && seedConfig[plot.seedType]) || {};
+        div.innerHTML =
+          '<div class="plot-icon">' + (cfg2.emoji || '🌾') + '</div>' +
+          '<div class="plot-tag">HARVEST!</div>';
+      }
+
+      div.addEventListener('click', function () { handlePlotClick(plot); });
+      grid.appendChild(div);
+    });
+  }
+
+  function renderShop() {
+    var list = document.getElementById('seedShopList');
+    list.innerHTML = '';
+    if (!seedConfig) return;
+
+    var freeClaimed = (state && state.freeSeedClaimedToday) || 0;
+    var dailyCap = 10;
+    var freeRemaining = Math.max(0, dailyCap - freeClaimed);
+
+    Object.keys(seedConfig).forEach(function (key) {
+      var cfg = seedConfig[key];
+      var owned = (state.seedInventory && state.seedInventory[key]) || 0;
+      var card = document.createElement('div');
+      card.className = 'seed-item';
+
+      var priceHtml = cfg.free
+        ? '<span class="seed-price-tag free">FREE (' + freeRemaining + '/10 REMAINING)</span>'
+        : '<span class="seed-price-tag paid">$' + cfg.costUsd + ' USDC</span>';
+
+      var btnHtml = '';
+      if (cfg.free) {
+        if (freeRemaining > 0) {
+          btnHtml = '<button class="buy-btn" data-seed="' + key + '" data-free="true">Claim (' + freeRemaining + ' Left)</button>';
+        } else {
+          btnHtml = '<button class="buy-btn" disabled>Daily Limit (10/10)</button>';
+        }
+      } else {
+        btnHtml = '<button class="buy-btn x402-btn" data-seed="' + key + '" data-cost="' + cfg.costUsd + '">Buy ($' + cfg.costUsd + ')</button>';
+      }
+
+      var reusableBadge = !cfg.free ? '<span style="color:#2b6cb0; font-weight:700;">♻️ Reusable</span>' : '';
+      card.innerHTML =
+        '<div class="seed-emoji">' + cfg.emoji + '</div>' +
+        '<div class="seed-details">' +
+          '<div class="seed-name-row"><span class="seed-name">' + cfg.name + '</span>' + priceHtml + '</div>' +
+          '<div class="seed-meta">' +
+            '<span>⏳ ' + fmtGrowDuration(cfg.growMs) + '</span>' +
+            '<span>🌾 +' + cfg.yield + ' MUSE</span>' +
+            '<span class="seed-owned">Seeds: ' + owned + '</span>' +
+            reusableBadge +
+          '</div>' +
+        '</div>' +
+        btnHtml;
+
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll('.buy-btn:not(:disabled)').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var seedType = b.getAttribute('data-seed');
+        var isFree = b.getAttribute('data-free') === 'true';
+        var cost = b.getAttribute('data-cost');
+        if (isFree) {
+          claimFreeWheatFlow();
+        } else {
+          buyWithX402(seedType, cost);
+        }
+      });
+    });
+  }
+
+  function renderSynthesis() {
+    var list = document.getElementById('synthesisList');
+    if (!list) return;
+    list.innerHTML = '';
+    var recipes = seedRecipes || DEFAULT_RECIPES;
+    var harvestInv = (state && state.harvestInventory) || {};
+
+    // Barn / Gudang Hasil Panen Box
+    var barnBox = document.createElement('div');
+    barnBox.style.cssText = 'background:#fefbf3; border:1.5px solid var(--card-border); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:10px; width:100%; box-sizing:border-box;';
+    var barnBadges = Object.keys(seedConfig || {}).map(function (k) {
+      var count = harvestInv[k] || 0;
+      var cfg = seedConfig[k];
+      return '<span style="font-size:11px; font-weight:700; background:#fff; border:1px solid #e2d3b5; padding:3px 8px; border-radius:12px; margin:2px; display:inline-flex; align-items:center; gap:4px;">' +
+        cfg.emoji + ' ' + count + ' ' + cfg.name + '</span>';
+    }).join(' ');
+    barnBox.innerHTML =
+      '<div style="font-size:11px; font-weight:800; color:var(--gold-dark); margin-bottom:6px;">🧺 HARVESTED CROPS BARN:</div>' +
+      '<div style="display:flex; flex-wrap:wrap; gap:4px;">' + barnBadges + '</div>';
+    list.appendChild(barnBox);
+
+    recipes.forEach(function (rec) {
+      var fromCfg = (seedConfig && seedConfig[rec.from]) || { name: rec.from, emoji: '🌱' };
+      var toCfg = (seedConfig && seedConfig[rec.to]) || { name: rec.name || rec.to, emoji: rec.emoji || '✨', yield: 0, costUsd: 0 };
+      var currentHarvested = harvestInv[rec.from] || 0;
+      var canCraft1 = currentHarvested >= rec.fromQty;
+      var maxCraft = Math.floor(currentHarvested / rec.fromQty);
+
+      var card = document.createElement('div');
+      card.className = 'recipe-card';
+      card.innerHTML =
+        '<div class="recipe-flow">' +
+          '<div class="recipe-side">' +
+            '<span style="font-size:24px;">' + fromCfg.emoji + '</span>' +
+            '<div>' +
+              '<div style="font-weight:800; font-size:12px;">' + rec.fromQty + 'x Harvested ' + fromCfg.name + '</div>' +
+              '<div style="font-size:10px; color:var(--ink-muted);">' + (fromCfg.free ? 'Free Crop' : '$' + fromCfg.costUsd + ' Val') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<span class="recipe-arrow">➔</span>' +
+          '<div class="recipe-side" style="justify-content:flex-end; text-align:right;">' +
+            '<div>' +
+              '<div style="font-weight:800; font-size:12px; color:var(--leaf-dark);">+' + rec.toQty + 'x ' + toCfg.name + ' Seed</div>' +
+              '<div style="font-size:10px; color:var(--gold-dark); font-weight:700;">+' + toCfg.yield + ' MUSE · $' + toCfg.costUsd + '</div>' +
+            '</div>' +
+            '<span style="font-size:24px;">' + toCfg.emoji + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="recipe-actions">' +
+          '<div class="recipe-owned-tag">Harvested Stock: <span class="highlight">' + currentHarvested + ' ' + fromCfg.name + '</span></div>' +
+          '<div class="craft-btn-group">' +
+            '<button class="craft-btn" data-from="' + rec.from + '" data-mult="1" ' + (canCraft1 ? '' : 'disabled') + '>Upgrade 1x</button>' +
+            (maxCraft > 1 ? '<button class="craft-btn max-btn" data-from="' + rec.from + '" data-mult="' + maxCraft + '">Max (' + maxCraft + 'x)</button>' : '') +
+          '</div>' +
+        '</div>';
+
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll('.craft-btn:not(:disabled)').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var fromSeed = btn.getAttribute('data-from');
+        var mult = Number(btn.getAttribute('data-mult') || 1);
+        upgradeSeedFlow(fromSeed, mult, btn);
+      });
+    });
+  }
+
+  async function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
+    try {
+      if (triggerBtn) triggerBtn.disabled = true;
+      var res = await bankr.invokeScript('upgradeSeed', { fromSeed: fromSeed, multiplier: mult });
+      if (!res || !res.ok) {
+        showBanner((res && res.error) || 'Upgrade failed.', 'error');
+        if (triggerBtn) triggerBtn.disabled = false;
+        return;
+      }
+      applySync(res);
+      spawnFloatText(triggerBtn, '✨ +' + res.craftedQty + ' ' + res.craftedEmoji);
+      showBanner('🎉 Successfully upgraded ' + (res.recipe.fromQty * mult) + ' harvested ' + res.recipe.from + ' into +' + res.craftedQty + ' ' + res.craftedName + ' Seeds!', 'info');
+    } catch (err) {
+      showBanner('Upgrade error: ' + err.message, 'error');
+      if (triggerBtn) triggerBtn.disabled = false;
+    }
+  }
+
+  function renderUpgrades() {
+    var mount = document.getElementById('upgradeList');
+    if (!mount) return;
+    var currentSize = (state && state.gridSize) || 3;
+
+    var upgrades = [
+      {
+        size: 4,
+        key: '4x4',
+        name: 'Expanded Farm (4x4 Grid)',
+        plots: 16,
+        costUsd: 5.00,
+        emoji: '🏡',
+        desc: 'Expands territory from 9 to 16 plots (+7 extra plots). Plant and harvest more crops simultaneously.',
+        endpoint: 'https://x402.bankr.bot/0x0b127f65d167159e4e2bf0b73c2975a14ac3d056/musefarm-grid-4x4'
+      },
+      {
+        size: 5,
+        key: '5x5',
+        name: 'Estate Farm (5x5 Grid)',
+        plots: 25,
+        costUsd: 7.00,
+        emoji: '🏰',
+        desc: 'The ultimate estate with 25 plots (+16 extra plots). Massive capacity and highest $MUSEFARM accumulation rate.',
+        endpoint: 'https://x402.bankr.bot/0x0b127f65d167159e4e2bf0b73c2975a14ac3d056/musefarm-grid-5x5'
+      }
+    ];
+
+    mount.innerHTML = upgrades.map(function (u) {
+      var isUnlocked = currentSize >= u.size;
+      var btnText = isUnlocked ? 'Unlocked ✅ (Active)' : 'Upgrade to ' + u.key + ' ($' + u.costUsd + ' USDC)';
+      var disabled = isUnlocked ? 'disabled' : '';
+
+      return '<div class="upgrade-card">' +
+        '<div class="upgrade-header">' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<span style="font-size:22px;">' + u.emoji + '</span>' +
+            '<span class="upgrade-title">' + u.name + '</span>' +
+          '</div>' +
+          '<span class="upgrade-price">$' + u.costUsd + ' USDC</span>' +
+        '</div>' +
+        '<div class="upgrade-desc">' + u.desc + '</div>' +
+        '<button class="upgrade-btn" data-upgrade-endpoint="' + u.endpoint + '" data-cost="' + u.costUsd + '" data-key="' + u.key + '" ' + disabled + '>' +
+          btnText +
+        '</button>' +
+      '</div>';
+    }).join('');
+
+    mount.querySelectorAll('.upgrade-btn:not(:disabled)').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var endpoint = btn.getAttribute('data-upgrade-endpoint');
+        var cost = btn.getAttribute('data-cost');
+        var key = btn.getAttribute('data-key');
+        buyGridUpgrade(endpoint, cost, key);
+      });
+    });
+  }
+
+  async function buyGridUpgrade(endpoint, costUsd, key) {
+    showBanner('Opening x402 payment modal for ' + key + ' Grid Upgrade ($' + costUsd + ' USDC on Base)...', 'info');
+    try {
+      var payRes = await bankr.x402.fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ upgrade: key }),
+        maxPaymentUsd: Number(costUsd)
+      });
+
+      if (payRes && payRes.ok) {
+        showBanner('🎉 Land upgrade payment confirmed on Base! Expanding your farm...', 'info');
+        await syncState();
+      } else {
+        showBanner('Payment was canceled or not completed.', 'error');
+      }
+    } catch (err) {
+      showBanner('x402 upgrade error: ' + err.message, 'error');
+    }
+  }
+
+  function tickCountdowns() {
+    document.querySelectorAll('[data-plot-plant]').forEach(function (el) {
+      var pAt = Number(el.getAttribute('data-plot-plant'));
+      var gMs = Number(el.getAttribute('data-plot-grow'));
+      var remain = (pAt + gMs) - Date.now();
+      if (remain <= 0) {
+        syncState();
+      } else {
+        el.textContent = fmtTime(remain);
+      }
+    });
+
+    if (state && state.stamina < maxStamina) {
+      var diff = state.staminaUpdatedAt + staminaRegenMs - Date.now();
+      document.getElementById('staminaCountdown').textContent = '+1 Stamina in ' + fmtTime(diff);
+    }
+  }
+
+  function applySync(res) {
+    state = res.state;
+    seedConfig = res.seedConfig || seedConfig;
+    seedRecipes = res.seedRecipes || seedRecipes || DEFAULT_RECIPES;
+    gridConfig = res.gridConfig || gridConfig;
+    maxStamina = res.maxStamina || maxStamina;
+    staminaRegenMs = res.staminaRegenMs || staminaRegenMs;
+
+    if (Array.isArray(res.credited) && res.credited.length > 0) {
+      var summary = res.credited.map(function (c) {
+        var name = (seedConfig[c.seedType] && seedConfig[c.seedType].name) || c.seedType;
+        return '+' + c.qty + ' ' + name;
+      }).join(', ');
+      showBanner('🎉 Shop purchase verified! Credited ' + summary + ' to your seed inventory!', 'info');
+    }
+
+    if (res.upgradedGrid) {
+      showBanner('🎉 Land successfully expanded to ' + res.upgradedGrid + 'x' + res.upgradedGrid + ' (' + (res.upgradedGrid * res.upgradedGrid) + ' Plots)!', 'info');
+    }
+
+    renderProfile();
+    renderPlots();
+    renderShop();
+    renderSynthesis();
+    renderUpgrades();
+  }
+
+  async function syncState() {
+    try {
+      var res = await bankr.invokeScript('getFarm');
+      if (res && res.ok) {
+        applySync(res);
+      } else if (res && res.error) {
+        showBanner(res.error, 'error');
+      }
+    } catch (err) {
+      console.error('sync error', err);
+    }
+  }
+
+  function handlePlotClick(plot) {
+    if (plot.state === 'ready') {
+      harvestPlotFlow(plot.index);
+    } else if (plot.state === 'empty') {
+      openPlantModal(plot.index);
+    } else {
+      var cfg = (seedConfig && seedConfig[plot.seedType]) || {};
+      var rem = (plot.plantedAt + (cfg.growMs || 0)) - Date.now();
+      showBanner((cfg.name || 'Crop') + ' is growing! Ready to harvest in ' + fmtTime(rem) + '.', 'info');
+    }
+  }
+
+  function openPlantModal(plotIndex) {
+    currentPlot = plotIndex;
+    var mount = document.getElementById('plantModalMount');
+    var owned = state.seedInventory || {};
+
+    var optsHtml = '';
+    Object.keys(seedConfig).forEach(function (k) {
+      var cfg = seedConfig[k];
+      var qty = owned[k] || 0;
+      var canPlant = qty > 0 && state.stamina >= 1;
+      optsHtml +=
+        '<div class="modal-seed-opt ' + (canPlant ? '' : 'disabled') + '" data-seed="' + k + '" data-can="' + canPlant + '">' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<span style="font-size:22px;">' + cfg.emoji + '</span>' +
+            '<div>' +
+              '<div style="font-weight:800; font-size:12px;">' + cfg.name + ' (Seeds: ' + qty + ')</div>' +
+              '<div style="font-size:10px; color:var(--ink-muted);">Takes ' + fmtGrowDuration(cfg.growMs) + ' · Yields +' + cfg.yield + ' MUSE</div>' +
+            '</div>' +
+          '</div>' +
+          '<span style="font-size:11px; font-weight:800; color:' + (qty > 0 ? 'var(--leaf)' : 'var(--danger)') + ';">' + (qty > 0 ? 'Plant' : 'Out') + '</span>' +
+        '</div>';
+    });
+
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="modalBackdrop">' +
+        '<div class="modal-card">' +
+          '<h3>Select Seed to Plant</h3>' +
+          optsHtml +
+          '<button class="modal-close" id="modalCloseBtn">Cancel</button>' +
+        '</div>' +
+      '</div>';
+
+    mount.querySelectorAll('.modal-seed-opt').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (opt.getAttribute('data-can') === 'true') {
+          var st = opt.getAttribute('data-seed');
+          mount.innerHTML = '';
+          plantSeedFlow(currentPlot, st);
+        } else {
+          showBanner('No seeds available or not enough stamina.', 'error');
+        }
+      });
+    });
+
+    document.getElementById('modalCloseBtn').addEventListener('click', function () { mount.innerHTML = ''; });
+    document.getElementById('modalBackdrop').addEventListener('click', function (e) {
+      if (e.target.id === 'modalBackdrop') mount.innerHTML = '';
+    });
+  }
+
+  async function plantSeedFlow(plotIdx, seedType) {
+    try {
+      var res = await bankr.invokeScript('plantSeed', { plotIndex: plotIdx, seedType: seedType });
+      if (!res || !res.ok) {
+        if (res && res.state) applySync(res);
+        showBanner((res && res.error) || 'Planting failed.', 'error');
+        return;
+      }
+      applySync(res);
+      var name = (seedConfig[seedType] && seedConfig[seedType].name) || seedType;
+      showBanner('Planted ' + name + ' on plot #' + (plotIdx + 1) + '!', 'info');
+    } catch (err) {
+      showBanner('Plant error: ' + err.message, 'error');
+    }
+  }
+
+  async function harvestPlotFlow(plotIdx) {
+    try {
+      var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
+      var res = await bankr.invokeScript('harvestPlot', { plotIndex: plotIdx });
+      if (!res || !res.ok) {
+        if (res && res.state) applySync(res);
+        showBanner((res && res.error) || 'Harvest failed.', 'error');
+        return;
+      }
+      applySync(res);
+      if (targetPlotEl) {
+        spawnFloatText(targetPlotEl, '+' + res.harvested + ' MUSE' + (res.seedReturned ? ' · ♻️ Seed Kept' : ''));
+      }
+      var msg = '🌾 Harvest successful! +' + res.harvested + ' MUSE & +1 Harvested ' + (res.cropYieldName || '') + ' added to Barn!';
+      if (res.seedReturned) {
+        msg += ' ♻️ Premium seed preserved & returned to inventory for replanting!';
+      }
+      showBanner(msg, 'info');
+    } catch (err) {
+      showBanner('Harvest error: ' + err.message, 'error');
+    }
+  }
+
+  async function claimFreeWheatFlow() {
+    try {
+      var res = await bankr.invokeScript('claimFreeWheat');
+      if (!res || !res.ok) {
+        showBanner((res && res.error) || 'Free seed claim failed.', 'error');
+        return;
+      }
+      applySync(res);
+      showBanner('Claim successful! +1 Wheat Seed (' + res.freeClaimsRemaining + '/10 remaining today).', 'info');
+    } catch (err) {
+      showBanner('Claim error: ' + err.message, 'error');
+    }
+  }
+
+  async function buyWithX402(seedType, costUsd) {
+    var cfg = seedConfig[seedType];
+    if (!cfg || !cfg.endpoint) {
+      showBanner('Invalid seed configuration.', 'error');
+      return;
+    }
+
+    showBanner('Opening x402 payment modal for ' + cfg.name + ' ($' + costUsd + ' USDC on Base)...', 'info');
+
+    try {
+      var payRes = await bankr.x402.fetch(cfg.endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ seedType: seedType, qty: 1 }),
+        maxPaymentUsd: Number(costUsd)
+      });
+
+      if (payRes && payRes.ok) {
+        showBanner('Payment confirmed on Base! Updating inventory...', 'info');
+        await syncState();
+      } else {
+        showBanner('Payment was canceled or not completed.', 'error');
+      }
+    } catch (err) {
+      showBanner('x402 error: ' + err.message, 'error');
+    }
+  }
+
+  async function loadLeaderboard(force) {
+    var tbody = document.getElementById('lbTableBody');
+    if (force) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Updating leaderboard standings...</td></tr>';
+    }
+    try {
+      var res = await bankr.invokeScript('getLeaderboard', force ? { force: true } : {});
+      var entries = (res && res.entries) || [];
+      if (!entries.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">No farm harvests recorded yet. Plant and harvest crops to enter the rankings!</td></tr>';
+        return;
+      }
+      tbody.innerHTML = entries.map(function (row, idx) {
+        var isMe = state && state.walletAddress && row.walletAddress && (row.walletAddress.toLowerCase() === state.walletAddress.toLowerCase());
+        var highlight = isMe ? ' style="background:#f0fff4; font-weight:700;"' : '';
+        var medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1);
+        return '<tr' + highlight + '>' +
+          '<td>' + medal + '</td>' +
+          '<td>' + shortAddr(row.walletAddress) + (isMe ? ' (You)' : '') + '</td>' +
+          '<td>' + row.level + '</td>' +
+          '<td>' + row.totalHarvested + ' MUSE</td>' +
+        '</tr>';
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger);">Error loading leaderboard standings</td></tr>';
+    }
+  }
+
+  function setupTabs() {
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var target = btn.getAttribute('data-tab');
+        document.getElementById('tabShop').style.display = target === 'shop' ? 'block' : 'none';
+        document.getElementById('tabSynthesis').style.display = target === 'synthesis' ? 'block' : 'none';
+        document.getElementById('tabUpgrade').style.display = target === 'upgrade' ? 'block' : 'none';
+        document.getElementById('tabLeaderboard').style.display = target === 'leaderboard' ? 'block' : 'none';
+        document.getElementById('tabTreasury').style.display = target === 'treasury' ? 'block' : 'none';
+        if (target === 'synthesis') renderSynthesis();
+        if (target === 'upgrade') renderUpgrades();
+        if (target === 'leaderboard') loadLeaderboard();
+      });
+    });
+
+    var quickUpgradeBtn = document.getElementById('quickUpgradeBtn');
+    if (quickUpgradeBtn) {
+      quickUpgradeBtn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+        var upTab = document.querySelector('.tab-btn[data-tab="upgrade"]');
+        if (upTab) upTab.classList.add('active');
+        document.getElementById('tabShop').style.display = 'none';
+        document.getElementById('tabSynthesis').style.display = 'none';
+        document.getElementById('tabUpgrade').style.display = 'block';
+        document.getElementById('tabLeaderboard').style.display = 'none';
+        document.getElementById('tabTreasury').style.display = 'none';
+        renderUpgrades();
+      });
+    }
+
+    var lbBtn = document.getElementById('refreshLbBtn');
+    if (lbBtn) {
+      lbBtn.addEventListener('click', function () { loadLeaderboard(true); });
+    }
+
+    var avatarFrame = document.getElementById('farmerAvatarFrame');
+    if (avatarFrame) {
+      avatarFrame.addEventListener('click', openAvatarLightbox);
+    }
+  }
+
+  async function boot() {
+    setupTabs();
+
+    if (!bankr.ctx.isAuthenticated) {
+      document.getElementById('signinGate').style.display = 'block';
+      document.getElementById('signinAction').addEventListener('click', async function () {
+        await bankr.auth.requireSignIn();
+        location.reload();
+      });
+      return;
+    }
+
+    document.getElementById('gameWorkspace').style.display = 'grid';
+    await syncState();
+
+    setInterval(syncState, 20000);
+    setInterval(tickCountdowns, 1000);
+  }
+
+  bankr.on('ready', boot);
+})();
+</script>
+</body>
+</html>

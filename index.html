@@ -20,8 +20,8 @@
     --sky-bottom: #fde68a;
     --card-bg: rgba(255, 253, 247, 0.96);
     --card-border: #e2d3b5;
-    --ink: #2d3748;
-    --ink-muted: #718096;
+    --ink: #1d3828;
+    --ink-muted: #476451;
     --danger: #e53e3e;
     --radius-lg: 16px;
     --radius-md: 12px;
@@ -647,7 +647,7 @@
   /* Premium field system */
   :root {
     --field-ink: #eef8ee;
-    --field-muted: #9ab7a2;
+    --field-muted: #52715d;
     --field-deep: #0b2118;
     --field-panel: rgba(14, 42, 29, 0.84);
     --field-panel-strong: rgba(9, 31, 21, 0.95);
@@ -782,6 +782,13 @@
   .stat-chip { background: rgba(255,255,255,0.75); padding: 7px 12px; }
   .stat-chip .val { color: #a36919; }
   .wallet-chip { background: #e9f6e7; color: #276341; padding: 7px 11px; }
+
+  /* Keep secondary text readable on the pale field panels. */
+  .tab-btn { color: #466b53; }
+  .tab-btn:hover { color: #174c32; }
+  .meta-sub, .bar-header, .seed-meta, .upgrade-desc, .recipe-owned-tag,
+  .wallet-help, .wallet-balance-label { color: #476451; }
+  .farm-subtitle-row { color: #2f7049; }
 
   .layout { grid-template-columns: 254px minmax(0, 1fr) 390px; gap: 18px; }
   .farmer-card, .farm-container, .layout > .card:last-child { min-width: 0; }
@@ -1030,8 +1037,8 @@
     <div class="card signin-panel" id="signinGate" style="display:none;">
       <div style="font-size:48px;">🚜</div>
       <h2>Connect to MUSEFARM</h2>
-       <p>Connect your wallet (MetaMask, Rabby, Coinbase Wallet, or a guest wallet) to enter your farm.</p>
-      <button class="signin-btn" id="signinAction">Enter Farm</button>
+       <p id="signinMessage">Sign in through the Bankr app to load your synchronized farm.</p>
+       <button class="signin-btn" id="signinAction">Sign In With Bankr</button>
     </div>
 
     <!-- Game Workspace -->
@@ -1299,13 +1306,16 @@
   // Runtime state
    var state = null;
    var userWallet = null;
-   var authType = null; // 'injected' | 'guest'
+   var authType = null; // 'bankr'
    var embeddedWallet = null; // Ethers.js Wallet instance for guest wallet
    var ethersProvider = null;
    var ethersSigner = null;
    var baseReadProvider = null;
    var walletBalances = { native: '--', usdc: '--' };
    var currentPlot = null;
+   var bankrApp = null;
+   var liveSyncTimer = null;
+   var liveTimersStarted = false;
 
   // ==========================================
   // HELPERS
@@ -1361,56 +1371,86 @@
   }
 
   // ==========================================
-  // LOCAL STORAGE FARM STATE ENGINE
+  // BANKR LIVE STATE ENGINE
   // ==========================================
-  function getStorageKey(addr) {
-    return 'musefarm_state_' + addr.toLowerCase();
+  function getBankrApp() {
+    return window.bankr && window.bankr.scripts ? window.bankr : null;
   }
 
-  function createFreshState(addr) {
-    var now = Date.now();
-    var today = new Date().toISOString().slice(0, 10);
-    var plots = [];
-    for (var i = 0; i < 9; i++) {
-      plots.push({ index: i, state: 'empty', seedType: null, plantedAt: 0 });
+  function showSigninGate(message, canSignIn) {
+    var gate = document.getElementById('signinGate');
+    var workspace = document.getElementById('gameWorkspace');
+    var messageEl = document.getElementById('signinMessage');
+    var action = document.getElementById('signinAction');
+    if (gate) gate.style.display = 'block';
+    if (workspace) workspace.style.display = 'none';
+    if (messageEl) messageEl.textContent = message;
+    if (action) {
+      action.style.display = canSignIn ? '' : 'none';
     }
-    return {
-      walletAddress: addr,
-      muse: 20,
-      level: 1,
-      gridSize: 3,
-      plots: plots,
-      stamina: MAX_STAMINA,
-      staminaUpdatedAt: now,
-      totalHarvested: 0,
-      seedInventory: { wheat: 3, corn: 0, berry: 0, melon: 0, truffle: 0, sunflower: 0, dragonfruit: 0, lotus: 0 },
-      harvestInventory: { wheat: 0, corn: 0, berry: 0, melon: 0, truffle: 0, sunflower: 0, dragonfruit: 0, lotus: 0 },
-      freeSeedClaimedToday: 0,
-      freeSeedDate: today,
-      createdAt: now,
-      updatedAt: now
-    };
   }
 
-  function loadState(addr) {
+  function applyFarmResponse(result) {
+    if (!result) return;
+    if (result.seedConfig) {
+      Object.keys(result.seedConfig).forEach(function (key) {
+        SEED_CONFIG[key] = Object.assign({}, SEED_CONFIG[key] || {}, result.seedConfig[key]);
+      });
+    }
+    if (Array.isArray(result.seedRecipes)) DEFAULT_RECIPES = result.seedRecipes;
+    if (result.gridConfig) GRID_CONFIG = Object.assign({}, GRID_CONFIG, result.gridConfig);
+    if (result.maxStamina) MAX_STAMINA = result.maxStamina;
+    if (result.staminaRegenMs) STAMINA_REGEN_MS = result.staminaRegenMs;
+    if (result.dailyFreeCap) DAILY_FREE_SEED_CAP = result.dailyFreeCap;
+    if (result.state) state = result.state;
+  }
+
+  async function invokeFarmScript(name, args) {
+    var app = getBankrApp();
+    if (!app) throw new Error('Open MUSEFARM inside the Bankr app to use live farm state.');
+    if (app.auth && !app.auth.isAuthenticated) {
+      await app.auth.requireSignIn();
+    }
+    var result = await app.scripts.run(name, args || {});
+    applyFarmResponse(result);
+    if (!result || result.ok === false) {
+      throw new Error((result && result.error) || 'Bankr script failed.');
+    }
+    return result;
+  }
+
+  async function loadLiveFarm(showErrors) {
+    var app = getBankrApp();
+    if (!app) return false;
+    if (app.auth && !app.auth.isAuthenticated) {
+      showSigninGate('Sign in through Bankr to load your synchronized farm.', true);
+      return false;
+    }
     try {
-      var raw = localStorage.getItem(getStorageKey(addr));
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        return recalc(parsed);
-      }
-    } catch (e) {
-      console.warn('Storage load err', e);
+      var result = await invokeFarmScript('getFarm');
+      userWallet = (result.state && result.state.walletAddress) || (app.wallet && (app.wallet.evmAddress || app.wallet.address)) || (app.ctx && app.ctx.walletAddress);
+      authType = 'bankr';
+      document.getElementById('signinGate').style.display = 'none';
+      document.getElementById('gameWorkspace').style.display = 'grid';
+      renderAll();
+      var syncEl = document.getElementById('lastSyncTime');
+      if (syncEl) syncEl.textContent = 'SYNCED ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return true;
+    } catch (err) {
+      if (showErrors !== false) showSigninGate(err.message || 'Unable to load the live farm.', true);
+      return false;
     }
-    var fresh = createFreshState(addr);
-    saveState(fresh);
-    return fresh;
   }
 
-  function saveState(s) {
-    if (!s || !s.walletAddress) return;
-    s.updatedAt = Date.now();
-    localStorage.setItem(getStorageKey(s.walletAddress), JSON.stringify(s));
+  function startLiveUpdates() {
+    if (liveTimersStarted) return;
+    liveTimersStarted = true;
+    liveSyncTimer = setInterval(function () {
+      loadLiveFarm(false);
+      var leaderboardTab = document.getElementById('tabLeaderboard');
+      if (leaderboardTab && leaderboardTab.style.display !== 'none') loadLeaderboard(true);
+    }, 15000);
+    setInterval(tickCountdowns, 1000);
   }
 
   function recalc(s) {
@@ -1728,16 +1768,24 @@
      renderWallet();
    }
 
-   async function refreshWalletBalance() {
-     if (!userWallet) return;
-     var nativeEl = document.getElementById('walletNativeBalance');
-     var usdcEl = document.getElementById('walletUsdcBalance');
-     if (nativeEl) nativeEl.textContent = 'Loading...';
-     if (usdcEl) usdcEl.textContent = 'Loading...';
+    async function refreshWalletBalance() {
+      if (!userWallet) return;
+      var nativeEl = document.getElementById('walletNativeBalance');
+      var usdcEl = document.getElementById('walletUsdcBalance');
+      if (nativeEl) nativeEl.textContent = 'Loading...';
+      if (usdcEl) usdcEl.textContent = 'Loading...';
 
-     try {
-       if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
-       var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, baseReadProvider);
+      try {
+        var app = getBankrApp();
+        if (app) {
+          var liveBalances = await invokeFarmScript('getWalletBalances');
+          walletBalances.native = liveBalances.nativeEth || '--';
+          walletBalances.usdc = liveBalances.usdc || '--';
+          renderWallet();
+          return;
+        }
+        if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+        var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, baseReadProvider);
        var results = await Promise.all([
          baseReadProvider.getBalance(userWallet),
          usdc.balanceOf(userWallet)
@@ -1787,12 +1835,26 @@
        return;
      }
 
-     var btn = document.getElementById('withdrawBtn');
-     if (btn) btn.disabled = true;
-     showBanner('Preparing ' + asset + ' withdrawal on Base...', 'info');
+      var btn = document.getElementById('withdrawBtn');
+      if (btn) btn.disabled = true;
+      showBanner('Preparing ' + asset + ' withdrawal on Base...', 'info');
 
-     try {
-       var signer;
+      try {
+        var app = getBankrApp();
+        if (app) {
+          var prepared = await invokeFarmScript('prepareWithdrawal', {
+            asset: asset,
+            amount: amount,
+            destination: destination
+          });
+          await app.confirmTransaction(prepared.tx);
+          if (amountEl) amountEl.value = '';
+          if (destinationEl) destinationEl.value = '';
+          showBanner('Withdrawal submitted for confirmation on Base.', 'info');
+          refreshWalletBalance();
+          return;
+        }
+        var signer;
        if (authType === 'injected') {
          await switchToBaseNetwork();
          signer = ethersSigner;
@@ -1889,190 +1951,75 @@
     });
   }
 
-  function plantSeedFlow(plotIdx, seedType) {
-    if (state.stamina < 1) {
-      showBanner('Not enough stamina! Wait for regen or full rest.', 'error');
-      return;
+  async function plantSeedFlow(plotIdx, seedType) {
+    var btnMessage = 'Planting on plot #' + (plotIdx + 1) + '...';
+    showBanner(btnMessage, 'info');
+    try {
+      await invokeFarmScript('plantSeed', { plotIndex: plotIdx, seedType: seedType });
+      renderAll();
+      var name = (SEED_CONFIG[seedType] && SEED_CONFIG[seedType].name) || seedType;
+      showBanner('Planted ' + name + ' on plot #' + (plotIdx + 1) + '. Live farm state saved.', 'info');
+    } catch (err) {
+      showBanner('Planting failed: ' + (err.message || err), 'error');
+      loadLiveFarm(false);
     }
-    if ((state.seedInventory[seedType] || 0) < 1) {
-      showBanner('No seeds of that type in inventory.', 'error');
-      return;
-    }
-
-    state.stamina -= 1;
-    state.seedInventory[seedType] -= 1;
-    state.plots[plotIdx] = {
-      index: plotIdx,
-      state: 'growing',
-      seedType: seedType,
-      plantedAt: Date.now()
-    };
-    saveState(state);
-    renderAll();
-    var name = (SEED_CONFIG[seedType] && SEED_CONFIG[seedType].name) || seedType;
-    showBanner('Planted ' + name + ' on plot #' + (plotIdx + 1) + '!', 'info');
   }
 
-  function harvestPlotFlow(plotIdx) {
-    var p = state.plots[plotIdx];
+  async function harvestPlotFlow(plotIdx) {
+    var p = state && state.plots[plotIdx];
     if (!p || p.state !== 'ready') return;
     var cfg = SEED_CONFIG[p.seedType] || {};
-    var gainedMuse = cfg.yield || 5;
-
-    state.muse += gainedMuse;
-    state.totalHarvested += gainedMuse;
-    state.level = Math.floor(state.totalHarvested / 100) + 1;
-
-    // Add harvested crop to barn inventory
-    if (!state.harvestInventory) state.harvestInventory = {};
-    state.harvestInventory[p.seedType] = (state.harvestInventory[p.seedType] || 0) + 1;
-
-    // Premium seeds are reusable: returns seed to inventory
-    var seedReturned = !cfg.free;
-    if (seedReturned) {
-      state.seedInventory[p.seedType] = (state.seedInventory[p.seedType] || 0) + 1;
+    try {
+      var result = await invokeFarmScript('harvestPlot', { plotIndex: plotIdx });
+      renderAll();
+      var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
+      if (targetPlotEl) spawnFloatText(targetPlotEl, '+' + (result.harvested || cfg.yield || 0) + ' MUSE');
+      showBanner('🌾 Harvest confirmed and saved to the live farm.', 'info');
+      loadLeaderboard(true);
+    } catch (err) {
+      showBanner('Harvest failed: ' + (err.message || err), 'error');
+      loadLiveFarm(false);
     }
-
-    // Reset plot to empty
-    state.plots[plotIdx] = { index: plotIdx, state: 'empty', seedType: null, plantedAt: 0 };
-    saveState(state);
-    renderAll();
-
-    var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
-    if (targetPlotEl) {
-      spawnFloatText(targetPlotEl, '+' + gainedMuse + ' MUSE' + (seedReturned ? ' · ♻️ Seed Kept' : ''));
-    }
-    var msg = '🌾 Harvest successful! +' + gainedMuse + ' MUSE & +1 Harvested ' + (cfg.name || '') + ' added to Barn!';
-    if (seedReturned) {
-      msg += ' ♻️ Premium seed preserved & returned to inventory for replanting!';
-    }
-    showBanner(msg, 'info');
   }
 
-  function claimFreeWheatFlow() {
-    var claimed = state.freeSeedClaimedToday || 0;
-    if (claimed >= DAILY_FREE_SEED_CAP) {
-      showBanner('Daily limit reached! 10/10 free seeds claimed today.', 'error');
-      return;
+  async function claimFreeWheatFlow() {
+    try {
+      var result = await invokeFarmScript('claimFreeWheat', { qty: 1 });
+      renderAll();
+      showBanner('Claim successful! +' + (result.added || 1) + ' Wheat Seed. Live farm state saved.', 'info');
+    } catch (err) {
+      showBanner('Claim failed: ' + (err.message || err), 'error');
+      loadLiveFarm(false);
     }
-    state.freeSeedClaimedToday = claimed + 1;
-    state.seedInventory.wheat = (state.seedInventory.wheat || 0) + 1;
-    saveState(state);
-    renderAll();
-    showBanner('Claim successful! +1 Wheat Seed (' + (DAILY_FREE_SEED_CAP - state.freeSeedClaimedToday) + '/10 remaining today).', 'info');
   }
 
-  function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
-    var rec = DEFAULT_RECIPES.find(function (r) { return r.from === fromSeed; });
-    if (!rec) return;
-    var requiredTotal = rec.fromQty * mult;
-    var currentHarvested = (state.harvestInventory && state.harvestInventory[fromSeed]) || 0;
-
-    if (currentHarvested < requiredTotal) {
-      showBanner('Not enough harvested crops! Need ' + requiredTotal + ' ' + rec.from, 'error');
-      return;
+  async function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
+    try {
+      var result = await invokeFarmScript('upgradeSeed', { fromSeed: fromSeed, multiplier: mult });
+      renderAll();
+      if (triggerBtn) spawnFloatText(triggerBtn, '✨ +' + (result.craftedQty || 0) + ' ' + (result.craftedEmoji || 'seed'));
+      showBanner('🎉 Seed upgrade confirmed and saved to the live farm.', 'info');
+    } catch (err) {
+      showBanner('Seed upgrade failed: ' + (err.message || err), 'error');
+      loadLiveFarm(false);
     }
-
-    state.harvestInventory[fromSeed] -= requiredTotal;
-    var craftedQty = rec.toQty * mult;
-    state.seedInventory[rec.to] = (state.seedInventory[rec.to] || 0) + craftedQty;
-    saveState(state);
-    renderAll();
-
-    if (triggerBtn) spawnFloatText(triggerBtn, '✨ +' + craftedQty + ' ' + rec.emoji);
-    showBanner('🎉 Successfully upgraded ' + requiredTotal + ' harvested ' + rec.from + ' into +' + craftedQty + ' ' + rec.name + ' Seeds!', 'info');
   }
 
-  // ==========================================
-  // ON-CHAIN PAYMENT ENGINE (USDC TO CREATOR)
-  // ==========================================
-  async function executeOnChainPayment(costUsd) {
-    // If user has injected wallet connected
-    if (authType === 'injected' && ethersSigner) {
-      try {
-        var net = await ethersProvider.getNetwork();
-        if (net.chainId !== 8453n) {
-          showBanner('Switching network to Base chain...', 'info');
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: BASE_CHAIN_ID }]
-          });
-          ethersProvider = new ethers.BrowserProvider(window.ethereum);
-          ethersSigner = await ethersProvider.getSigner();
-        }
-      } catch (switchErr) {
-        console.warn('Network switch check', switchErr);
-      }
-
-      try {
-        var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, ethersSigner);
-        var amountUnits = ethers.parseUnits(costUsd.toString(), 6);
-        showBanner('Please confirm $' + costUsd + ' USDC payment to Creator in your wallet...', 'info');
-        var tx = await usdc.transfer(CREATOR_WALLET, amountUnits);
-        showBanner('Transaction submitted! Waiting for confirmation...', 'info');
-        await tx.wait();
-        return { success: true, hash: tx.hash, method: 'USDC' };
-      } catch (usdcErr) {
-        if (usdcErr.code === 'ACTION_REJECTED' || (usdcErr.info && usdcErr.info.error && usdcErr.info.error.code === 4001)) {
-          throw new Error('Transaction was cancelled by user.');
-        }
-        var ethAmount = (costUsd / 2600).toFixed(6);
-        var confirmEth = confirm('USDC transfer failed. Would you like to pay equivalent ETH (' + ethAmount + ' ETH) to creator wallet?\n\nRecipient: ' + CREATOR_WALLET);
-        if (!confirmEth) throw usdcErr;
-
-        var txEth = await ethersSigner.sendTransaction({
-          to: CREATOR_WALLET,
-          value: ethers.parseEther(ethAmount.toString())
-        });
-        showBanner('Transaction submitted! Waiting for confirmation...', 'info');
-        await txEth.wait();
-        return { success: true, hash: txEth.hash, method: 'ETH' };
-      }
+  async function payThroughBankr(endpoint, costUsd, payload) {
+    var app = getBankrApp();
+    if (!app || !app.x402 || typeof app.x402.fetch !== 'function') {
+      throw new Error('Paid actions must be opened inside the Bankr app.');
     }
-
-    // Guest wallets sign locally and broadcast through the Base RPC provider.
-    // Display interactive payment modal to send USDC directly to creator wallet
-    return new Promise(function (resolve, reject) {
-      openDirectPaymentModal(costUsd, resolve, reject);
+    var response = await app.x402.fetch(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+      headers: { 'content-type': 'application/json' },
+      maxPaymentUsd: costUsd
     });
-  }
-
-  function openDirectPaymentModal(costUsd, resolve, reject) {
-    var mount = document.getElementById('plantModalMount');
-    var ethAmount = (costUsd / 2600).toFixed(6);
-    mount.innerHTML =
-      '<div class="modal-backdrop" id="payBackdrop">' +
-        '<div class="modal-card" style="text-align:center;">' +
-          '<h3>Pay Creator Wallet</h3>' +
-          '<p style="font-size:12px; color:var(--ink-muted); margin-bottom:12px;">' +
-            'Send <strong>$' + costUsd + ' USDC</strong> (or ' + ethAmount + ' ETH) on Base Network directly to the game creator:' +
-          '</p>' +
-          '<div style="background:#f7fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; font-family:monospace; font-size:11px; word-break:break-all; margin-bottom:10px;" id="creatorAddrText">' +
-            CREATOR_WALLET +
-          '</div>' +
-          '<div style="display:flex; gap:6px; margin-bottom:12px;">' +
-            '<button class="buy-btn" id="copyCreatorAddrBtn" style="flex:1;">📋 Copy Address</button>' +
-            '<a href="https://basescan.org/address/' + CREATOR_WALLET + '" target="_blank" style="padding:6px 12px; background:#edf2f7; border-radius:8px; font-size:11px; font-weight:800; color:#4a5568; text-decoration:none; display:flex; align-items:center;">Explorer ↗</a>' +
-          '</div>' +
-          '<button class="signin-btn" id="confirmPaidBtn" style="width:100%; margin-bottom:8px;">✅ I Have Sent the Payment</button>' +
-          '<button class="modal-close" id="cancelPayBtn">Cancel</button>' +
-        '</div>' +
-      '</div>';
-
-    document.getElementById('copyCreatorAddrBtn').addEventListener('click', function () {
-      navigator.clipboard.writeText(CREATOR_WALLET);
-      this.textContent = '✅ Copied!';
-    });
-
-    document.getElementById('confirmPaidBtn').addEventListener('click', function () {
-      mount.innerHTML = '';
-      resolve({ success: true, hash: 'manual_' + Date.now(), method: 'DIRECT' });
-    });
-
-    document.getElementById('cancelPayBtn').addEventListener('click', function () {
-      mount.innerHTML = '';
-      reject(new Error('Payment cancelled.'));
-    });
+    if (!response || !response.ok) {
+      throw new Error('The payment endpoint did not confirm the purchase.');
+    }
+    return response;
   }
 
   async function buySeedOnChain(seedType, costUsd, btnEl) {
@@ -2083,13 +2030,10 @@
     showBanner('Initiating purchase for ' + cfg.name + ' ($' + costUsd + ' USDC)...', 'info');
 
     try {
-      var payRes = await executeOnChainPayment(costUsd);
-      if (payRes && payRes.success) {
-        state.seedInventory[seedType] = (state.seedInventory[seedType] || 0) + 1;
-        saveState(state);
-        renderAll();
-        showBanner('🎉 Payment confirmed! +1 ' + cfg.name + ' Seed added to inventory!', 'info');
-      }
+      if (!cfg.endpoint) throw new Error('This seed has no configured payment endpoint.');
+      await payThroughBankr(cfg.endpoint, costUsd, { seedType: seedType, qty: 1 });
+      await loadLiveFarm(false);
+      showBanner('🎉 Payment confirmed! +1 ' + cfg.name + ' Seed added to the live inventory.', 'info');
     } catch (err) {
       showBanner('Purchase cancelled or failed: ' + (err.message || err), 'error');
     } finally {
@@ -2102,18 +2046,11 @@
     showBanner('Initiating land expansion ($' + costUsd + ' USDC)...', 'info');
 
     try {
-      var payRes = await executeOnChainPayment(costUsd);
-      if (payRes && payRes.success) {
-        var prevPlotsCount = state.plots.length;
-        var newTotalPlots = targetSize * targetSize;
-        state.gridSize = targetSize;
-        for (var i = prevPlotsCount; i < newTotalPlots; i++) {
-          state.plots.push({ index: i, state: 'empty', seedType: null, plantedAt: 0 });
-        }
-        saveState(state);
-        renderAll();
-        showBanner('🎉 Land successfully expanded to ' + targetSize + 'x' + targetSize + ' (' + newTotalPlots + ' plots)!', 'info');
-      }
+      var grid = GRID_CONFIG[key] || {};
+      var endpoint = grid.endpoint || ('https://x402.bankr.bot/' + CREATOR_WALLET + '/musefarm-grid-' + targetSize + 'x' + targetSize);
+      await payThroughBankr(endpoint, costUsd, { gridSize: targetSize });
+      await loadLiveFarm(false);
+      showBanner('🎉 Land expansion payment confirmed. The live farm is syncing.', 'info');
     } catch (err) {
       showBanner('Upgrade cancelled or failed: ' + (err.message || err), 'error');
     } finally {
@@ -2147,34 +2084,23 @@
   // ==========================================
   // LEADERBOARD
   // ==========================================
-  function loadLeaderboard(force) {
+  async function loadLeaderboard(force) {
     var tbody = document.getElementById('lbTableBody');
     if (!tbody) return;
-
-    var mockEntries = [
-      { walletAddress: '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056', level: 12, totalHarvested: 8450 },
-      { walletAddress: '0x3841a1829910c22c009d1238491a928e102fba31', level: 9, totalHarvested: 5200 },
-      { walletAddress: '0x71c08b492318cf01b44d32049b18371901a88b19', level: 7, totalHarvested: 3100 },
-      { walletAddress: '0xa4188b2019488a01f8273901b8274a91901848b1', level: 6, totalHarvested: 2450 }
-    ];
-
-    if (state && state.walletAddress) {
-      var found = mockEntries.find(function (e) { return e.walletAddress.toLowerCase() === state.walletAddress.toLowerCase(); });
-      if (found) {
-        found.level = Math.max(found.level, state.level);
-        found.totalHarvested = Math.max(found.totalHarvested, state.totalHarvested);
-      } else {
-        mockEntries.push({
-          walletAddress: state.walletAddress,
-          level: state.level,
-          totalHarvested: state.totalHarvested
-        });
-      }
+    var app = getBankrApp();
+    if (!app) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Open MUSEFARM inside Bankr for live standings.</td></tr>';
+      return;
     }
-
-    mockEntries.sort(function (a, b) { return b.totalHarvested - a.totalHarvested; });
-
-    tbody.innerHTML = mockEntries.map(function (row, idx) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Syncing live standings...</td></tr>';
+    try {
+      var result = await invokeFarmScript('getLeaderboard', { force: !!force });
+      var entries = Array.isArray(result.entries) ? result.entries : [];
+      if (!entries.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">No synchronized harvesters yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = entries.map(function (row, idx) {
       var isMe = state && state.walletAddress && (row.walletAddress.toLowerCase() === state.walletAddress.toLowerCase());
       var highlight = isMe ? ' style="background:#f0fff4; font-weight:700;"' : '';
       var medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1);
@@ -2184,7 +2110,10 @@
         '<td>' + row.level + '</td>' +
         '<td>' + row.totalHarvested + ' MUSE</td>' +
       '</tr>';
-    }).join('');
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger); text-align:center;">Unable to load live standings.</td></tr>';
+    }
   }
 
   // ==========================================
@@ -2309,9 +2238,9 @@
     });
 
      document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
-      localStorage.removeItem('musefarm_auth_session');
-      location.reload();
-    });
+       showBanner('Manage your Bankr sign-in from the host app.', 'info');
+       mount.innerHTML = '';
+     });
 
     document.getElementById('closeWalletDetailsBtn').addEventListener('click', function () { mount.innerHTML = ''; });
     document.getElementById('walletBackdrop').addEventListener('click', function (e) {
@@ -2319,195 +2248,49 @@
     });
   }
 
-  // ==========================================
-   // CONNECT WALLET MODAL
-  // ==========================================
-  function openConnectModal() {
-    var mount = document.getElementById('plantModalMount');
-    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    var hasInjected = !!window.ethereum;
+   async function onWalletConnected(addr, type) {
+     userWallet = addr;
+     authType = type || 'bankr';
+     if (!getBankrApp()) {
+       showSigninGate('MUSEFARM live state is available only inside the Bankr app. No local game mode is enabled.', false);
+       return;
+     }
+     if (await loadLiveFarm(true)) {
+       refreshWalletBalance();
+       loadLeaderboard();
+       startLiveUpdates();
+       showBanner('Connected as ' + shortAddr(addr) + '. Live farm state is active.', 'info');
+     }
+   }
 
-    mount.innerHTML =
-      '<div class="modal-backdrop" id="authBackdrop">' +
-        '<div class="auth-modal-card">' +
-          '<div style="text-align:center; margin-bottom:14px;">' +
-            '<div style="font-size:36px; line-height:1;">🚜</div>' +
-            '<h3 style="margin:6px 0 2px; font-size:17px; color:var(--leaf-dark);">Connect to MUSEFARM</h3>' +
-           '<p style="font-size:12px; color:var(--ink-muted); margin:0;">Choose a wallet to access your farm</p>' +
-           '</div>' +
+   async function boot() {
+     setupTabs();
+     bankrApp = getBankrApp();
+     if (!bankrApp) {
+       showSigninGate('Open MUSEFARM inside the Bankr app to use synchronized farm state. No local or demo mode is enabled.', false);
+       return;
+     }
 
-           // Guest Wallet Section
-           '<div class="auth-section-title">⚡ Guest Wallet (No Extension Needed)</div>' +
-           '<button class="auth-btn" id="guestLoginBtn">' +
-             '<div class="auth-btn-left">' +
-               '<span class="auth-btn-icon">⚡</span>' +
-               '<div>' +
-                 '<div class="auth-btn-text">Create Guest Wallet</div>' +
-                 '<div class="auth-btn-sub">Creates a random wallet stored locally in this browser</div>' +
-               '</div>' +
-            '</div>' +
-            '<span class="auth-btn-badge active">Instant</span>' +
-          '</button>' +
+     var signInBtn = document.getElementById('signinAction');
+     if (signInBtn) {
+       signInBtn.addEventListener('click', async function () {
+         try {
+           await bankrApp.auth.requireSignIn();
+           await onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr');
+         } catch (err) {
+           showBanner('Sign-in cancelled or failed: ' + (err.message || err), 'error');
+         }
+       });
+     }
 
-          // Web3 Wallets Section
-          '<div class="auth-section-title">🦊 Web3 Wallets</div>' +
-          '<button class="auth-btn" id="injectedWalletBtn">' +
-            '<div class="auth-btn-left">' +
-              '<span class="auth-btn-icon">🦊</span>' +
-              '<div>' +
-                '<div class="auth-btn-text">Browser Wallet (MetaMask / Rabby)</div>' +
-                '<div class="auth-btn-sub">' + (hasInjected ? 'Detected & Ready' : 'Connect Injected Provider') + '</div>' +
-              '</div>' +
-            '</div>' +
-            (hasInjected ? '<span class="auth-btn-badge active">Detected</span>' : '<span class="auth-btn-badge">Web3</span>') +
-          '</button>' +
-
-          (isMobile ? 
-            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">' +
-              '<a href="https://metamask.app.link/dapp/' + window.location.host + window.location.pathname + '" target="_blank" class="auth-btn" style="justify-content:center; text-align:center; padding:8px; text-decoration:none;">' +
-                '<span style="font-size:12px; font-weight:800; color:var(--ink);">📱 MetaMask App</span>' +
-              '</a>' +
-              '<a href="https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(window.location.href) + '" target="_blank" class="auth-btn" style="justify-content:center; text-align:center; padding:8px; text-decoration:none;">' +
-                '<span style="font-size:12px; font-weight:800; color:var(--ink);">📱 Coinbase App</span>' +
-              '</a>' +
-            '</div>' : '') +
-
-          '<button class="modal-close" id="closeAuthModalBtn">Close</button>' +
-        '</div>' +
-      '</div>';
-
-    // Handler: Injected Wallet
-    document.getElementById('injectedWalletBtn').addEventListener('click', async function () {
-      if (window.ethereum) {
-        try {
-          ethersProvider = new ethers.BrowserProvider(window.ethereum);
-          var accounts = await ethersProvider.send('eth_requestAccounts', []);
-          if (accounts && accounts.length > 0) {
-            ethersSigner = await ethersProvider.getSigner();
-            mount.innerHTML = '';
-            setAuthSession('injected', accounts[0]);
-            onWalletConnected(accounts[0], 'injected');
-          }
-        } catch (err) {
-          alert('Wallet connection rejected: ' + (err.message || err));
-        }
-      } else {
-        if (isMobile) {
-          window.location.href = 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname;
-        } else {
-          alert('No browser wallet extension found. Please install MetaMask, Rabby, or use the Guest Wallet option.');
-        }
-      }
-    });
-
-    // Handler: Instant Guest
-    document.getElementById('guestLoginBtn').addEventListener('click', function () {
-      mount.innerHTML = '';
-      connectWithGuest();
-    });
-
-    document.getElementById('closeAuthModalBtn').addEventListener('click', function () { mount.innerHTML = ''; });
-    document.getElementById('authBackdrop').addEventListener('click', function (e) {
-      if (e.target.id === 'authBackdrop') mount.innerHTML = '';
-    });
-  }
-
-  function setAuthSession(type, addr, secret) {
-    var sess = { type: type, address: addr, secret: secret || '', savedAt: Date.now() };
-    localStorage.setItem('musefarm_auth_session', JSON.stringify(sess));
-  }
-
-   function connectWithGuest() {
-    var existingKey = localStorage.getItem('musefarm_guest_privkey');
-    if (!existingKey) {
-      var rand = ethers.Wallet.createRandom();
-      existingKey = rand.privateKey;
-      localStorage.setItem('musefarm_guest_privkey', existingKey);
-    }
-    embeddedWallet = new ethers.Wallet(existingKey);
-    authType = 'guest';
-    setAuthSession('guest', embeddedWallet.address, existingKey);
-    onWalletConnected(embeddedWallet.address, 'guest');
-  }
-
-  function onWalletConnected(addr, type) {
-    userWallet = addr;
-    authType = type || 'injected';
-    state = loadState(addr);
-
-    document.getElementById('signinGate').style.display = 'none';
-    document.getElementById('gameWorkspace').style.display = 'grid';
-
-     renderAll();
-     loadLeaderboard();
-     refreshWalletBalance();
-
-     showBanner('Connected as ' + shortAddr(addr) + ' (' + authType + ')! Welcome to MUSEFARM.', 'info');
-
-    // Auto-regen stamina and tick timers
-    setInterval(function () {
-      if (state) {
-        state = recalc(state);
-        renderProfile();
-      }
-    }, 15000);
-    setInterval(tickCountdowns, 1000);
-  }
-
-  async function boot() {
-    setupTabs();
-
-    // Check existing stored session first
-    try {
-       var rawSess = localStorage.getItem('musefarm_auth_session');
-       if (rawSess) {
-         var sess = JSON.parse(rawSess);
-         if (sess.type === 'social') {
-           // Remove sessions created by the retired email login flow.
-           localStorage.removeItem('musefarm_auth_session');
-         } else if (sess.type === 'guest') {
-           connectWithGuest();
-           return;
-        } else if (sess.type === 'injected' && window.ethereum) {
-          ethersProvider = new ethers.BrowserProvider(window.ethereum);
-          var accounts = await ethersProvider.send('eth_accounts', []);
-          if (accounts && accounts.length > 0) {
-            ethersSigner = await ethersProvider.getSigner();
-            onWalletConnected(accounts[0], 'injected');
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Session resume err', e);
-    }
-
-    // If window.ethereum already has connected accounts
-    if (window.ethereum) {
-      try {
-        ethersProvider = new ethers.BrowserProvider(window.ethereum);
-        var accounts = await ethersProvider.send('eth_accounts', []);
-        if (accounts && accounts.length > 0) {
-          ethersSigner = await ethersProvider.getSigner();
-          onWalletConnected(accounts[0], 'injected');
-          return;
-        }
-      } catch (e) {}
-    }
-
-    // Show signin gate
-    document.getElementById('signinGate').style.display = 'block';
-    document.getElementById('signinAction').addEventListener('click', openConnectModal);
-
-    // Listen for account changes
-    if (window.ethereum && window.ethereum.on) {
-      window.ethereum.on('accountsChanged', function (accounts) {
-        if (accounts.length > 0 && authType === 'injected') {
-          onWalletConnected(accounts[0], 'injected');
-        }
-      });
-    }
-  }
+     var onReady = function () { onWalletConnected(bankrApp.ctx && bankrApp.ctx.walletAddress, 'bankr'); };
+     if (bankrApp.on) {
+       bankrApp.on('ready', onReady);
+       bankrApp.on('refresh', function () { loadLiveFarm(false); refreshWalletBalance(); });
+     }
+     if (bankrApp.auth && bankrApp.auth.isAuthenticated) onReady();
+     else showSigninGate('Sign in through Bankr to load your synchronized farm.', true);
+   }
 
   window.addEventListener('DOMContentLoaded', boot);
 })();

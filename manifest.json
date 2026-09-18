@@ -1,11 +1,13 @@
 {
   "slug": "musefarm",
   "title": "MUSEFARM",
-  "description": "MUSEFARM — an onchain farming game on Robinhood Chain. Plant crops, manage stamina, harvest MUSE points, buy premium seeds & grid upgrades (4x4, 5x5) via x402 USDC on Base to creator wallet, and claim $MUSEFARM rewards via Merkle-Drop pool.",
+  "description": "MUSEFARM — a live per-wallet farming game powered by Bankr app state, with Base x402 purchases and confirmed wallet transactions.",
   "frontendIdentity": "viewer",
   "permissions": [
     "read:appdata",
     "write:appdata",
+    "read:chain",
+    "prepare:transaction",
     "pay:x402"
   ],
   "scripts": [
@@ -16,7 +18,9 @@
     "getLeaderboard",
     "refreshLeaderboard",
     "claimFreeWheat",
-    "upgradeSeed"
+    "upgradeSeed",
+    "getWalletBalances",
+    "prepareWithdrawal"
   ],
   "publicScripts": [],
   "publicDataKeys": [],

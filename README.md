@@ -1,15 +1,40 @@
 # MUSEFARM 🌾
 
-**MUSEFARM** is an onchain farming game on Robinhood Chain with x402 USDC micropayments on Base.
+**MUSEFARM** is a standalone Web3 farming game designed to run on any web hosting (Vercel, Netlify, Cloudflare Pages, GitHub Pages) with direct onchain payments to the creator wallet and Privy / Web3 wallet authentication.
 
-## Overview
-- **Blockchain**: Robinhood Chain (game state, plots, and harvest tracking)
-- **Payment Rail**: x402 USDC on Base (seed shop & territory expansions)
-- **Token Rewards**: $MUSEFARM rewards pool via Merkle distributor (1 MUSE = 2 $MUSEFARM)
+## 🌟 Key Architecture Changes
+- **Wallet Connection**: Supports **Privy** (social, email, embedded wallets) and standard **Web3 wallets** (MetaMask, Rabby, Coinbase Wallet, Injected EIP-1193).
+- **Direct Payment Routing**: When players purchase premium seeds or expand land territory, payments settle directly onchain to the creator wallet:
+  `0x0b127f65d167159e4e2bf0b73c2975a14ac3d056` via USDC on Base (contract: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) with ETH fallback.
+- **Standalone Game Engine**: Game state (plots, planted crops, growth timers, barn storage, stamina, and leveling) runs client-side and automatically persists to `localStorage` per connected wallet address.
 
-## Features
-- **Interactive Farm Plots**: 3x3 default grid, expandable up to 4x4 (16 plots) and 5x5 (25 plots).
-- **Crops & Seeds**: Free daily wheat plus premium reusable crops (Sweet Corn, Golden Berry, Celestial Melon, Royal Truffle, Mythic Sunflower, Mythic Dragon Fruit, Cosmic Lotus).
-- **Seed Synthesis & Upgrades**: Upgrade harvested crops into higher-tier seeds in the Barn.
-- **Mastery & Stamina**: Real-time stamina regeneration and farmer leveling system.
-- **Onchain Leaderboard**: Real-time ranking of top harvesters.
+## 🚀 How to Deploy as a Public Website
+
+### Option 1: Vercel / Netlify / Cloudflare Pages
+1. Fork or push this repository to your GitHub.
+2. Import the repository into [Vercel](https://vercel.com) or [Netlify](https://netlify.com).
+3. Set build settings to static (root folder, no build command needed).
+4. Deploy — your site will be live on your custom domain or `*.vercel.app`.
+
+### Option 2: GitHub Pages
+1. Go to repository **Settings** > **Pages**.
+2. Select branch `main` and root `/`.
+3. Click **Save** — site is instantly available at `https://reansky.github.io/musefarm/`.
+
+## ⚙️ Configuration
+In `index.html`:
+```javascript
+// Creator wallet receiving all seed & land upgrade purchases
+var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
+
+// (Optional) Add your Privy App ID from https://dashboard.privy.io
+var PRIVY_APP_ID = '';
+```
+*Note: Even without a Privy App ID, players can immediately connect with MetaMask, Rabby, Coinbase Wallet, or any browser Web3 wallet.*
+
+## 🌾 Game Features
+- **Interactive Plots**: 3x3 default grid, expandable to 4x4 (16 plots) and 5x5 (25 plots).
+- **Crops & Seeds**: Free daily wheat (10/day) plus reusable premium crops (Sweet Corn, Golden Berry, Celestial Melon, Royal Truffle, Mythic Sunflower, Mythic Dragon Fruit, Cosmic Lotus).
+- **Seed Synthesis**: Upgrade harvested crops into higher-tier seeds in the Barn.
+- **Mastery & Stamina**: Automatic stamina regeneration (every 3 minutes) and level progression.
+- **Rewards & Allocations**: 1 MUSE harvested = 2 $MUSEFARM token allocation.

@@ -1,17 +1,18 @@
 # MUSEFARM
 
-MUSEFARM is a Harvest Moon-inspired farming game with Privy social login, an embedded wallet, and Base transactions signed directly by the player.
+MUSEFARM is a Harvest Moon-inspired farming game with Privy social login, an embedded wallet, and multi-chain transactions signed directly by the player.
 
 ## Runtime
 
 Open the GitHub Pages site. Privy must allow `https://reansky.github.io` and have Google and Twitter enabled as login methods.
 
-Farm progress is stored locally per Privy wallet in the browser. Premium seeds and land expansions use direct USDC transfers from the embedded Privy wallet to the configured creator wallet. Every transaction requires player confirmation and Base gas.
+Farm progress is stored locally per Privy wallet in the browser. Premium seeds and land expansions use direct transfers from the embedded Privy wallet to the configured creator wallet. Payments support USDG or ETH on Robinhood Chain, plus USDC or ETH on Base. Every transaction requires player confirmation and ETH gas on the selected network.
 
 ## Features
 
 - X and Google sign-in through Privy.
 - Harvest Moon video hero on the login screen.
+- Live Privy signer address and balances for Base and Robinhood Chain.
 - 3x3 farm grid with 4x4 and 5x5 land expansions.
 - Free Wheat claims, reusable premium seeds, crop harvesting, stamina regeneration, and seed synthesis.
 - Local leaderboard and reward-score tracking.
@@ -22,5 +23,7 @@ Payment and network constants are defined in `index.html`:
 
 ```javascript
 var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
-var BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+var ROBINHOOD_USDG_ADDRESS = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
 ```
+
+Robinhood Chain uses chain ID `4663`, RPC `https://rpc.mainnet.chain.robinhood.com`, and ETH gas. Base uses chain ID `8453` and ETH gas.

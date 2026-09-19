@@ -254,7 +254,12 @@
     transition: transform 0.15s, border-color 0.15s; width: 100%; box-sizing: border-box;
   }
   .seed-item:hover { border-color: var(--gold-dark); }
-  .seed-emoji { font-size: 26px; line-height: 1; flex-shrink: 0; }
+  .seed-emoji {
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 11px; background: linear-gradient(145deg, #dcefc8, #8dbd79); color: #193b27;
+    font-size: 13px; font-weight: 950; letter-spacing: .5px; line-height: 1; flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+  }
   .seed-details { flex: 1; min-width: 0; }
   .seed-name-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
   .seed-name { font-weight: 800; font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -276,6 +281,15 @@
     box-shadow: 0 2px 6px rgba(49,130,206,0.3);
   }
   .buy-btn.privy-pay-btn:hover { background: linear-gradient(135deg, #2b6cb0, #2c5282); }
+  .payment-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .payment-select {
+    min-width: 132px; padding: 6px 7px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);
+    background: rgba(255,255,255,.92); color: var(--ink); font-size: 10px; font-weight: 800; outline: none;
+  }
+  .payment-select:focus { border-color: var(--gold-dark); }
+  .upgrade-payment-controls { width: 100%; }
+  .upgrade-payment-controls .payment-select { flex: 1; }
+  .upgrade-payment-controls .upgrade-btn { width: auto; flex: 1; }
 
   /* Seed Upgrade / Synthesis Cards */
   .recipe-card {
@@ -656,6 +670,18 @@
   .wallet-form input:focus, .wallet-form select:focus { border-color: var(--gold-dark); }
   .wallet-help { font-size: 10px; line-height: 1.45; color: var(--ink-muted); }
   .wallet-network { font-size: 10px; font-weight: 800; color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; padding: 3px 7px; border-radius: 12px; }
+  .wallet-summary-multichain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .privy-wallet-banner {
+    grid-column: 1 / -1; display: grid; grid-template-columns: minmax(180px, .8fr) minmax(220px, 1.2fr) auto;
+    align-items: center; gap: 14px; padding: 13px 16px; border-radius: 18px;
+    background: linear-gradient(115deg, rgba(32, 76, 49, .96), rgba(11, 35, 24, .94));
+    border: 1px solid rgba(164, 211, 133, .28); box-shadow: 0 18px 40px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .privy-wallet-banner-label { color: #cbe7ae; font-size: 10px; font-weight: 950; letter-spacing: 1.25px; }
+  .privy-wallet-banner-address { color: #f0f5e5; font-family: monospace; font-size: 11px; margin-top: 5px; word-break: break-all; }
+  .privy-wallet-banner-balances { color: #d6e9ca; font-size: 11px; line-height: 1.45; }
+  .wallet-refresh-btn { border: 1px solid rgba(230,191,109,.38); border-radius: 9px; padding: 8px 11px; background: rgba(230,191,109,.15); color: #f4d994; font-size: 10px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .wallet-refresh-btn:hover { background: rgba(230,191,109,.25); }
   @media (max-width: 359px) {
     .wallet-summary { grid-template-columns: 1fr; }
   }
@@ -985,8 +1011,13 @@
     .tab-nav { margin-left: -2px; margin-right: -2px; padding-left: 2px; padding-right: 2px; }
     .tab-btn { font-size: 10.5px; padding: 9px 10px; }
     .wallet-summary { grid-template-columns: 1fr; }
+    .wallet-summary-multichain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .wallet-action-row { display: grid; grid-template-columns: 1fr 1fr; }
     .wallet-action-row .modal-close { width: 100%; }
+    .privy-wallet-banner { grid-template-columns: 1fr; gap: 8px; padding: 13px; }
+    .wallet-refresh-btn { width: 100%; }
+    .payment-controls { flex-direction: column; align-items: stretch; }
+    .payment-select { width: 100%; min-width: 0; }
     .recipe-flow { align-items: flex-start; }
     .recipe-actions { gap: 6px; }
     .recipe-owned-tag { font-size: 10px; }
@@ -1271,7 +1302,7 @@
         </div>
         <div class="badges-row">
            <span class="badge-rh">PRIVY WALLET</span>
-            <span class="badge-rail">BASE PAYMENTS</span>
+             <span class="badge-rail">BASE + ROBINHOOD</span>
         </div>
       </div>
     </div>
@@ -1290,8 +1321,8 @@
         <video class="signin-hero-video" id="loginHeroVideo" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
         <div class="signin-showcase-video-overlay" aria-hidden="true"></div>
         <div class="signin-showcase-head">
-          <span class="signin-eyebrow">FIELD OPERATIONS / 001</span>
-          <span class="signin-live"><span></span> LIVE ON BASE</span>
+           <span class="signin-eyebrow">FIELD OPERATIONS</span>
+           <span class="signin-live"><span></span> LIVE ON TWO CHAINS</span>
         </div>
         <div class="signin-orbit" aria-hidden="true"></div>
         <div class="signin-mark" aria-hidden="true">MF</div>
@@ -1300,10 +1331,10 @@
           <h2>Grow something<br><em>worth keeping.</em></h2>
           <p>Plant, harvest, and build your field one season at a time. MUSEFARM turns consistency into compounding progress.</p>
         </div>
-        <div class="signin-showcase-footer">
-          <div><strong>01</strong><span>Plant with intent</span></div>
-          <div><strong>02</strong><span>Harvest in rhythm</span></div>
-          <div><strong>03</strong><span>Own the upside</span></div>
+         <div class="signin-showcase-footer">
+           <div><strong>Plant</strong><span>with intent</span></div>
+           <div><strong>Harvest</strong><span>in rhythm</span></div>
+           <div><strong>Build</strong><span>the upside</span></div>
         </div>
       </div>
       <div class="signin-auth">
@@ -1315,23 +1346,31 @@
           <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span><span class="provider-arrow">↗</span></button>
           <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span><span class="provider-arrow">↗</span></button>
         </div>
-        <div class="signin-trust-row"><span>⌁ Embedded wallet</span><span>◈ Base network</span><span>◌ Non-custodial</span></div>
-        <p class="signin-note">Privy handles the secure sign-in window and creates an embedded Ethereum wallet for your account.</p>
-        <div id="privyWalletStatus" class="privy-status-panel" style="display:none;">
-          <div class="privy-status-label">YOUR PRIVY ONCHAIN WALLET</div>
-          <div id="privyWalletAddress" class="privy-status-address"></div>
-          <div class="privy-status-balance">Base balance: <strong id="privyNativeBalance">-- ETH</strong> · <strong id="privyUsdcBalance">-- USDC</strong></div>
-          <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer">View on BaseScan ↗</a>
-          <button class="modal-close" id="privyLogoutBtn" type="button">Sign out</button>
-        </div>
+         <div class="signin-trust-row"><span>Embedded wallet</span><span>Base</span><span>Robinhood Chain</span></div>
+         <p class="signin-note">Privy creates the signer. Your address and balances appear here before you enter the field.</p>
+         <div id="privyWalletStatus" class="privy-status-panel" style="display:none;">
+           <div class="privy-status-label">PRIVY SIGNER READY</div>
+           <div id="privyWalletAddress" class="privy-status-address"></div>
+           <div class="privy-status-balance"><strong id="privyBaseEthBalance">-- ETH</strong> · <strong id="privyBaseUsdcBalance">-- USDC</strong> · <strong id="privyRobinhoodEthBalance">-- ETH</strong> · <strong id="privyRobinhoodUsdgBalance">-- USDG</strong></div>
+           <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer">View wallet activity ↗</a>
+           <button class="modal-close" id="privyLogoutBtn" type="button">Sign out</button>
+         </div>
         <button class="signin-btn" id="signinAction" style="display:none;">Continue</button>
         <div class="signin-legal">By continuing, you agree to the rhythm of the field.</div>
       </div>
     </div>
 
     <!-- Game Workspace -->
-    <div class="layout" id="gameWorkspace" style="display:none;">
-      <!-- Farmer Profile Card -->
+     <div class="layout" id="gameWorkspace" style="display:none;">
+       <div class="privy-wallet-banner" id="privyWalletBanner" style="display:none;">
+         <div>
+           <div class="privy-wallet-banner-label">PRIVY SIGNER ACTIVE</div>
+           <div class="privy-wallet-banner-address" id="workspaceWalletAddress">Waiting for wallet address</div>
+         </div>
+         <div class="privy-wallet-banner-balances" id="workspaceWalletBalances">Reading Base and Robinhood balances...</div>
+         <button class="wallet-refresh-btn" id="refreshWorkspaceWalletBtn" type="button">Refresh balances</button>
+       </div>
+       <!-- Farmer Profile Card -->
       <div class="card farmer-card">
         <div class="card-title">
           <span>Farmer Profile</span>
@@ -1417,25 +1456,33 @@
          <!-- Wallet Tab -->
          <div id="tabWallet" style="display:none;">
            <div class="wallet-panel">
-             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-               <span style="font-size:11px; color:var(--ink-muted);">Non-custodial wallet on Base</span>
-               <span class="wallet-network">BASE</span>
-             </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <span style="font-size:11px; color:var(--ink-muted);">Non-custodial Privy wallet</span>
+                <span class="wallet-network">BASE + ROBINHOOD</span>
+              </div>
 
-             <div class="wallet-summary">
-               <div class="wallet-balance">
-                 <div class="wallet-balance-label">Native balance</div>
-                 <div class="wallet-balance-value" id="walletNativeBalance">-- ETH</div>
-               </div>
-               <div class="wallet-balance">
-                 <div class="wallet-balance-label">USDC balance</div>
-                 <div class="wallet-balance-value" id="walletUsdcBalance">-- USDC</div>
-               </div>
-             </div>
+              <div class="wallet-summary wallet-summary-multichain">
+                <div class="wallet-balance">
+                  <div class="wallet-balance-label">Base ETH</div>
+                  <div class="wallet-balance-value" id="walletBaseEthBalance">-- ETH</div>
+                </div>
+                <div class="wallet-balance">
+                  <div class="wallet-balance-label">Base USDC</div>
+                  <div class="wallet-balance-value" id="walletBaseUsdcBalance">-- USDC</div>
+                </div>
+                <div class="wallet-balance">
+                  <div class="wallet-balance-label">Robinhood ETH</div>
+                  <div class="wallet-balance-value" id="walletRobinhoodEthBalance">-- ETH</div>
+                </div>
+                <div class="wallet-balance">
+                  <div class="wallet-balance-label">Robinhood USDG</div>
+                  <div class="wallet-balance-value" id="walletRobinhoodUsdgBalance">-- USDG</div>
+                </div>
+              </div>
 
              <div class="wallet-form">
                <h4>Deposit</h4>
-               <div class="wallet-help">Kirim ETH atau USDC di jaringan Base ke alamat ini. Deposit masuk langsung ke wallet yang terhubung.</div>
+                <div class="wallet-help">Kirim ETH atau USDC di Base, atau ETH atau USDG di Robinhood Chain. Semua memakai alamat Privy yang sama.</div>
                <div class="wallet-address-box" id="walletDepositAddress">--</div>
                <div class="wallet-action-row">
                  <button class="buy-btn" id="copyDepositAddressBtn">Copy Address</button>
@@ -1445,17 +1492,19 @@
 
              <div class="wallet-form">
                <h4>Withdraw</h4>
-               <label for="withdrawAsset">Asset</label>
-               <select id="withdrawAsset">
-                 <option value="USDC">USDC</option>
-                 <option value="ETH">ETH</option>
+                <label for="withdrawAsset">Network and asset</label>
+                <select id="withdrawAsset">
+                  <option value="base:USDC">Base · USDC</option>
+                  <option value="base:ETH">Base · ETH</option>
+                  <option value="robinhood:USDG">Robinhood · USDG</option>
+                  <option value="robinhood:ETH">Robinhood · ETH</option>
                </select>
                <label for="withdrawAmount">Amount</label>
                <input id="withdrawAmount" inputmode="decimal" placeholder="0.00" autocomplete="off" />
                <label for="withdrawDestination">Destination address</label>
                <input id="withdrawDestination" inputmode="text" placeholder="0x..." autocomplete="off" />
                <button class="upgrade-btn" id="withdrawBtn">Withdraw</button>
-               <div class="wallet-help">Withdrawal membutuhkan konfirmasi wallet dan biaya gas. Periksa jaringan serta alamat sebelum menyetujui transaksi.</div>
+                <div class="wallet-help">Withdrawal membutuhkan konfirmasi Privy dan gas ETH di jaringan yang dipilih. Periksa alamat dan jaringan sebelum menyetujui transaksi.</div>
              </div>
            </div>
          </div>
@@ -1463,7 +1512,7 @@
          <!-- Shop Tab -->
         <div id="tabShop">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-             Free Wheat capped at <strong>10x per day</strong>. Premium seeds are <strong>permanent & reusable</strong> and settle by direct <strong>USDC transfer from your Privy wallet on Base</strong>.
+              Free Wheat is limited daily. Premium seeds are reusable and can be paid with Robinhood USDG or ETH, or Base USDC or ETH. Payments go directly from Privy to the creator wallet.
           </div>
           <div class="shop-scroll" id="seedShopList"></div>
         </div>
@@ -1479,7 +1528,7 @@
         <!-- Land Upgrade Tab -->
         <div id="tabUpgrade" style="display:none;">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-             Expand your farm territory with <strong>USDC on Base via Privy</strong>. The payment is confirmed before the farm updates.
+             Expand your farm territory with the selected Robinhood or Base payment asset. The payment is confirmed before the farm updates.
           </div>
           <div id="upgradeList"></div>
         </div>
@@ -1670,17 +1719,34 @@
         }, [privy.ready, privy.authenticated, privy.user, walletState.wallets, walletState.ready, walletCreator.createWallet]);
 
         return null;
-      }
+       }
 
-      var root = ReactDOM.createRoot(document.getElementById('privyRoot'));
+       var baseChain = {
+         id: 8453,
+         name: 'Base',
+         nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+         rpcUrls: { default: { http: ['https://mainnet.base.org'] }, public: { http: ['https://mainnet.base.org'] } },
+         blockExplorers: { default: { name: 'BaseScan', url: 'https://basescan.org' } }
+       };
+       var robinhoodChain = {
+         id: 4663,
+         name: 'Robinhood Chain',
+         nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+         rpcUrls: { default: { http: ['https://rpc.mainnet.chain.robinhood.com'] }, public: { http: ['https://rpc.mainnet.chain.robinhood.com'] } },
+         blockExplorers: { default: { name: 'Robinhood Explorer', url: 'https://robinhoodchain.blockscout.com' } }
+       };
+
+       var root = ReactDOM.createRoot(document.getElementById('privyRoot'));
       root.render(React.createElement(
         Privy.PrivyProvider,
         {
-          appId: APP_ID,
-          config: {
-            loginMethods: ['google', 'twitter'],
-             embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } }
-          }
+           appId: APP_ID,
+           config: {
+             loginMethods: ['google', 'twitter'],
+              embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } },
+              defaultChain: robinhoodChain,
+              supportedChains: [robinhoodChain, baseChain]
+           }
         },
         React.createElement(PrivyBridge)
       ));
@@ -1696,34 +1762,48 @@
   // CONFIGURATION & CREATOR SETTINGS
   // ==========================================
    var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
-   var BASE_CHAIN_ID = '0x2105'; // 8453 in hex
-   var BASE_RPC_URL = 'https://mainnet.base.org';
-   var BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-  var ERC20_ABI = [
-    'function transfer(address to, uint256 amount) returns (bool)',
-    'function balanceOf(address owner) view returns (uint256)',
-    'function decimals() view returns (uint8)'
-  ];
+   var NETWORK_CONFIG = {
+     base: {
+       key: 'base', name: 'Base', chainId: 8453, chainIdHex: '0x2105',
+       rpcUrl: 'https://mainnet.base.org', explorer: 'https://basescan.org/address/',
+       nativeSymbol: 'ETH', stableSymbol: 'USDC', stableAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', stableDecimals: 6
+     },
+     robinhood: {
+       key: 'robinhood', name: 'Robinhood Chain', chainId: 4663, chainIdHex: '0x1237',
+       rpcUrl: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com/address/',
+       nativeSymbol: 'ETH', stableSymbol: 'USDG', stableAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', stableDecimals: 6
+     }
+   };
+   var ERC20_ABI = [
+     'function transfer(address to, uint256 amount) returns (bool)',
+     'function balanceOf(address owner) view returns (uint256)',
+     'function decimals() view returns (uint8)'
+   ];
+   var CHAINLINK_ABI = [
+     'function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)',
+     'function decimals() view returns (uint8)'
+   ];
+   var ROBINHOOD_ETH_USD_FEED = '0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9';
 
   var SEED_CONFIG = {
-    wheat:       { name: 'Wheat',              emoji: '🌾', costUsd: 0,    growMs: 1*60*1000,    yield: 5,     free: true },
-    corn:        { name: 'Sweet Corn',         emoji: '🌽', costUsd: 0.25, growMs: 2.5*60*1000,  yield: 20 },
-    berry:       { name: 'Golden Berry',       emoji: '🫐', costUsd: 1,    growMs: 7.5*60*1000,  yield: 90 },
-    melon:       { name: 'Celestial Melon',    emoji: '🍈', costUsd: 2.5,  growMs: 22.5*60*1000, yield: 250 },
-    truffle:     { name: 'Royal Truffle',      emoji: '🍄', costUsd: 5,    growMs: 60*60*1000,   yield: 600 },
-    sunflower:   { name: 'Mythic Sunflower',   emoji: '🌻', costUsd: 12.5, growMs: 180*60*1000,  yield: 1800 },
-    dragonfruit: { name: 'Mythic Dragon Fruit',emoji: '🐲', costUsd: 25,   growMs: 360*60*1000,  yield: 4000 },
-    lotus:       { name: 'Cosmic Lotus',       emoji: '🪷', costUsd: 50,   growMs: 720*60*1000,  yield: 10000 }
+     wheat:       { name: 'Wheat',              mark: 'W', costUsd: 0,    growMs: 1*60*1000,    yield: 5,     free: true },
+     corn:        { name: 'Sweet Corn',         mark: 'C', costUsd: 0.25, growMs: 2.5*60*1000,  yield: 20 },
+     berry:       { name: 'Golden Berry',       mark: 'B', costUsd: 1,    growMs: 7.5*60*1000,  yield: 90 },
+     melon:       { name: 'Celestial Melon',    mark: 'M', costUsd: 2.5,  growMs: 22.5*60*1000, yield: 250 },
+     truffle:     { name: 'Royal Truffle',      mark: 'T', costUsd: 5,    growMs: 60*60*1000,   yield: 600 },
+     sunflower:   { name: 'Mythic Sunflower',   mark: 'S', costUsd: 12.5, growMs: 180*60*1000,  yield: 1800 },
+     dragonfruit: { name: 'Mythic Dragon Fruit',mark: 'D', costUsd: 25,   growMs: 360*60*1000,  yield: 4000 },
+     lotus:       { name: 'Cosmic Lotus',       mark: 'L', costUsd: 50,   growMs: 720*60*1000,  yield: 10000 }
   };
 
   var DEFAULT_RECIPES = [
-    { from: 'wheat', fromQty: 10, to: 'corn', toQty: 1, name: 'Sweet Corn', emoji: '🌽', desc: '10 Harvested Wheat ➔ 1 Sweet Corn Seed' },
-    { from: 'corn', fromQty: 5, to: 'berry', toQty: 1, name: 'Golden Berry', emoji: '🫐', desc: '5 Harvested Corn ➔ 1 Golden Berry Seed' },
-    { from: 'berry', fromQty: 4, to: 'melon', toQty: 1, name: 'Celestial Melon', emoji: '🍈', desc: '4 Harvested Berry ➔ 1 Celestial Melon Seed' },
-    { from: 'melon', fromQty: 3, to: 'truffle', toQty: 1, name: 'Royal Truffle', emoji: '🍄', desc: '3 Harvested Melon ➔ 1 Royal Truffle Seed' },
-    { from: 'truffle', fromQty: 3, to: 'sunflower', toQty: 1, name: 'Mythic Sunflower', emoji: '🌻', desc: '3 Harvested Truffle ➔ 1 Mythic Sunflower Seed' },
-    { from: 'sunflower', fromQty: 2, to: 'dragonfruit', toQty: 1, name: 'Mythic Dragon Fruit', emoji: '🐲', desc: '2 Harvested Sunflower ➔ 1 Mythic Dragon Fruit Seed' },
-    { from: 'dragonfruit', fromQty: 2, to: 'lotus', toQty: 1, name: 'Cosmic Lotus', emoji: '🪷', desc: '2 Harvested Dragon Fruit ➔ 1 Cosmic Lotus Seed' }
+     { from: 'wheat', fromQty: 10, to: 'corn', toQty: 1, name: 'Sweet Corn', mark: 'C', desc: 'Harvested Wheat -> Sweet Corn Seed' },
+     { from: 'corn', fromQty: 5, to: 'berry', toQty: 1, name: 'Golden Berry', mark: 'B', desc: 'Harvested Corn -> Golden Berry Seed' },
+     { from: 'berry', fromQty: 4, to: 'melon', toQty: 1, name: 'Celestial Melon', mark: 'M', desc: 'Harvested Berry -> Celestial Melon Seed' },
+     { from: 'melon', fromQty: 3, to: 'truffle', toQty: 1, name: 'Royal Truffle', mark: 'T', desc: 'Harvested Melon -> Royal Truffle Seed' },
+     { from: 'truffle', fromQty: 3, to: 'sunflower', toQty: 1, name: 'Mythic Sunflower', mark: 'S', desc: 'Harvested Truffle -> Mythic Sunflower Seed' },
+     { from: 'sunflower', fromQty: 2, to: 'dragonfruit', toQty: 1, name: 'Mythic Dragon Fruit', mark: 'D', desc: 'Harvested Sunflower -> Dragon Fruit Seed' },
+     { from: 'dragonfruit', fromQty: 2, to: 'lotus', toQty: 1, name: 'Cosmic Lotus', mark: 'L', desc: 'Harvested Dragon Fruit -> Lotus Seed' }
   ];
 
   var GRID_CONFIG = {
@@ -1742,8 +1822,8 @@
     var authType = null; // 'privy'
    var ethersProvider = null;
    var ethersSigner = null;
-   var baseReadProvider = null;
-   var walletBalances = { native: '--', usdc: '--' };
+   var readProviders = {};
+   var walletBalances = { baseEth: '--', baseUsdc: '--', robinhoodEth: '--', robinhoodUsdg: '--' };
     var currentPlot = null;
     var privyWallet = null;
     var liveSyncTimer = null;
@@ -1765,7 +1845,9 @@
      ethersProvider = null;
      ethersSigner = null;
      state = null;
-     walletBalances = { native: '--', usdc: '--' };
+     walletBalances = { baseEth: '--', baseUsdc: '--', robinhoodEth: '--', robinhoodUsdg: '--' };
+     var walletBanner = document.getElementById('privyWalletBanner');
+     if (walletBanner) walletBanner.style.display = 'none';
      var topbar = document.getElementById('topbar');
      if (topbar) topbar.style.display = 'none';
     var walletLabel = document.getElementById('walletLabel');
@@ -1835,11 +1917,13 @@
      var title = document.getElementById('signinTitle');
      var messageEl = document.getElementById('signinMessage');
      var action = document.getElementById('signinAction');
-     var socialOptions = document.getElementById('socialLoginOptions');
-     var walletStatus = document.getElementById('privyWalletStatus');
+      var socialOptions = document.getElementById('socialLoginOptions');
+      var walletStatus = document.getElementById('privyWalletStatus');
+      var walletBanner = document.getElementById('privyWalletBanner');
      if (gate) gate.style.display = 'grid';
      if (workspace) workspace.style.display = 'none';
-     if (topbar) topbar.style.display = 'none';
+      if (topbar) topbar.style.display = 'none';
+      if (walletBanner) walletBanner.style.display = 'none';
      if (title) title.textContent = 'Connect to MUSEFARM';
      if (messageEl) messageEl.textContent = message;
      if (action) {
@@ -2009,15 +2093,27 @@
 
    function renderWallet() {
      var addressEl = document.getElementById('walletDepositAddress');
-     var nativeEl = document.getElementById('walletNativeBalance');
-     var usdcEl = document.getElementById('walletUsdcBalance');
      if (addressEl) addressEl.textContent = userWallet || '--';
-     if (nativeEl) nativeEl.textContent = walletBalances.native + ' ETH';
-     if (usdcEl) usdcEl.textContent = walletBalances.usdc + ' USDC';
-     var privyNativeEl = document.getElementById('privyNativeBalance');
-     var privyUsdcEl = document.getElementById('privyUsdcBalance');
-     if (privyNativeEl) privyNativeEl.textContent = walletBalances.native + ' ETH';
-     if (privyUsdcEl) privyUsdcEl.textContent = walletBalances.usdc + ' USDC';
+      var balanceMap = {
+        walletBaseEthBalance: walletBalances.baseEth + ' ETH',
+        walletBaseUsdcBalance: walletBalances.baseUsdc + ' USDC',
+        walletRobinhoodEthBalance: walletBalances.robinhoodEth + ' ETH',
+        walletRobinhoodUsdgBalance: walletBalances.robinhoodUsdg + ' USDG',
+        privyBaseEthBalance: walletBalances.baseEth + ' ETH',
+        privyBaseUsdcBalance: walletBalances.baseUsdc + ' USDC',
+        privyRobinhoodEthBalance: walletBalances.robinhoodEth + ' ETH',
+        privyRobinhoodUsdgBalance: walletBalances.robinhoodUsdg + ' USDG'
+      };
+      Object.keys(balanceMap).forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = balanceMap[id];
+      });
+      var workspaceAddress = document.getElementById('workspaceWalletAddress');
+      var workspaceBalances = document.getElementById('workspaceWalletBalances');
+      var walletBanner = document.getElementById('privyWalletBanner');
+      if (walletBanner && userWallet) walletBanner.style.display = 'grid';
+      if (workspaceAddress) workspaceAddress.textContent = userWallet || 'Waiting for wallet address';
+      if (workspaceBalances) workspaceBalances.textContent = 'Base ' + walletBalances.baseEth + ' ETH · ' + walletBalances.baseUsdc + ' USDC  |  Robinhood ' + walletBalances.robinhoodEth + ' ETH · ' + walletBalances.robinhoodUsdg + ' USDG';
    }
 
   function renderPlots() {
@@ -2040,12 +2136,12 @@
         var cfg = SEED_CONFIG[plot.seedType] || {};
         var rem = (plot.plantedAt + (cfg.growMs || 0)) - Date.now();
         div.innerHTML =
-          '<div class="plot-icon">' + (cfg.emoji || '🌱') + '</div>' +
+           '<div class="plot-icon">' + (cfg.mark || '?') + '</div>' +
           '<div class="plot-tag" data-plot-plant="' + plot.plantedAt + '" data-plot-grow="' + (cfg.growMs || 0) + '">' + fmtTime(rem) + '</div>';
       } else if (plot.state === 'ready') {
         var cfg2 = SEED_CONFIG[plot.seedType] || {};
         div.innerHTML =
-          '<div class="plot-icon">' + (cfg2.emoji || '🌾') + '</div>' +
+           '<div class="plot-icon">' + (cfg2.mark || '?') + '</div>' +
           '<div class="plot-tag">HARVEST!</div>';
       }
 
@@ -2080,12 +2176,20 @@
           btnHtml = '<button class="buy-btn" disabled>Daily Limit (10/10)</button>';
         }
       } else {
-       btnHtml = '<button class="buy-btn privy-pay-btn" data-seed="' + key + '" data-cost="' + cfg.costUsd + '">Buy ($' + cfg.costUsd + ')</button>';
+        btnHtml = '<div class="payment-controls">' +
+          '<select class="payment-select" data-payment-seed="' + key + '" aria-label="Payment network and asset">' +
+            '<option value="robinhood:USDG">Robinhood · USDG</option>' +
+            '<option value="robinhood:ETH">Robinhood · ETH</option>' +
+            '<option value="base:USDC">Base · USDC</option>' +
+            '<option value="base:ETH">Base · ETH</option>' +
+          '</select>' +
+          '<button class="buy-btn privy-pay-btn" data-seed="' + key + '" data-cost="' + cfg.costUsd + '">Buy</button>' +
+        '</div>';
       }
 
        var reusableBadge = !cfg.free ? '<span style="color:#2b6cb0; font-weight:700;">Reusable</span>' : '';
       card.innerHTML =
-        '<div class="seed-emoji">' + cfg.emoji + '</div>' +
+         '<div class="seed-emoji">' + cfg.mark + '</div>' +
         '<div class="seed-details">' +
           '<div class="seed-name-row"><span class="seed-name">' + cfg.name + '</span>' + priceHtml + '</div>' +
           '<div class="seed-meta">' +
@@ -2104,11 +2208,12 @@
       b.addEventListener('click', function () {
         var seedType = b.getAttribute('data-seed');
         var isFree = b.getAttribute('data-free') === 'true';
-        var cost = b.getAttribute('data-cost');
+         var cost = b.getAttribute('data-cost');
         if (isFree) {
           claimFreeWheatFlow();
         } else {
-          buySeedOnChain(seedType, Number(cost), b);
+           var payment = b.parentElement.querySelector('[data-payment-seed]');
+           buySeedOnChain(seedType, Number(cost), b, payment ? payment.value : 'robinhood:USDG');
         }
       });
     });
@@ -2128,7 +2233,7 @@
       var count = harvestInv[k] || 0;
       var cfg = SEED_CONFIG[k];
       return '<span style="font-size:11px; font-weight:700; background:#fff; border:1px solid #e2d3b5; padding:3px 8px; border-radius:12px; margin:2px; display:inline-flex; align-items:center; gap:4px;">' +
-        cfg.emoji + ' ' + count + ' ' + cfg.name + '</span>';
+         '<span class="seed-emoji" style="width:24px; height:24px; border-radius:8px; font-size:10px;">' + cfg.mark + '</span> ' + count + ' ' + cfg.name + '</span>';
     }).join(' ');
     barnBox.innerHTML =
        '<div style="font-size:11px; font-weight:800; color:var(--gold-dark); margin-bottom:6px;">HARVESTED CROPS BARN:</div>' +
@@ -2136,8 +2241,8 @@
     list.appendChild(barnBox);
 
     recipes.forEach(function (rec) {
-      var fromCfg = SEED_CONFIG[rec.from] || { name: rec.from, emoji: '🌱' };
-       var toCfg = SEED_CONFIG[rec.to] || { name: rec.name || rec.to, emoji: '', yield: 0, costUsd: 0 };
+       var fromCfg = SEED_CONFIG[rec.from] || { name: rec.from, mark: '?' };
+        var toCfg = SEED_CONFIG[rec.to] || { name: rec.name || rec.to, mark: '?', yield: 0, costUsd: 0 };
       var currentHarvested = harvestInv[rec.from] || 0;
       var canCraft1 = currentHarvested >= rec.fromQty;
       var maxCraft = Math.floor(currentHarvested / rec.fromQty);
@@ -2147,7 +2252,7 @@
       card.innerHTML =
         '<div class="recipe-flow">' +
           '<div class="recipe-side">' +
-            '<span style="font-size:24px;">' + fromCfg.emoji + '</span>' +
+             '<span class="seed-emoji">' + fromCfg.mark + '</span>' +
             '<div>' +
               '<div style="font-weight:800; font-size:12px;">' + rec.fromQty + 'x Harvested ' + fromCfg.name + '</div>' +
               '<div style="font-size:10px; color:var(--ink-muted);">' + (fromCfg.free ? 'Free Crop' : '$' + fromCfg.costUsd + ' Val') + '</div>' +
@@ -2159,7 +2264,7 @@
               '<div style="font-weight:800; font-size:12px; color:var(--leaf-dark);">+' + rec.toQty + 'x ' + toCfg.name + ' Seed</div>' +
               '<div style="font-size:10px; color:var(--gold-dark); font-weight:700;">+' + toCfg.yield + ' MUSE · $' + toCfg.costUsd + '</div>' +
             '</div>' +
-            '<span style="font-size:24px;">' + toCfg.emoji + '</span>' +
+             '<span class="seed-emoji">' + toCfg.mark + '</span>' +
           '</div>' +
         '</div>' +
         '<div class="recipe-actions">' +
@@ -2213,22 +2318,32 @@
        var btnText = isUnlocked ? 'Unlocked' : 'Expand Land ($' + u.costUsd + ' USDC)';
       var disabled = isUnlocked ? 'disabled' : '';
 
-      return '<div class="upgrade-card">' +
-        '<div class="upgrade-header">' +
+       return '<div class="upgrade-card">' +
+         '<div class="upgrade-header">' +
            '<span class="upgrade-title"><small style="color:var(--gold-dark); letter-spacing:1px;">' + u.marker + '</small> ' + u.name + '</span>' +
-          '<span class="upgrade-price">$' + u.costUsd + ' USDC</span>' +
+           '<span class="upgrade-price">$' + u.costUsd + ' value</span>' +
         '</div>' +
         '<div class="upgrade-desc">' + u.desc + '</div>' +
-        '<button class="upgrade-btn" data-size="' + u.size + '" data-cost="' + u.costUsd + '" data-key="' + u.key + '" ' + disabled + '>' + btnText + '</button>' +
-      '</div>';
+         (isUnlocked ? '<button class="upgrade-btn" disabled>' + btnText + '</button>' :
+           '<div class="payment-controls upgrade-payment-controls">' +
+             '<select class="payment-select" data-payment-upgrade="' + u.key + '" aria-label="Payment network and asset">' +
+               '<option value="robinhood:USDG">Robinhood · USDG</option>' +
+               '<option value="robinhood:ETH">Robinhood · ETH</option>' +
+               '<option value="base:USDC">Base · USDC</option>' +
+               '<option value="base:ETH">Base · ETH</option>' +
+             '</select>' +
+             '<button class="upgrade-btn" data-size="' + u.size + '" data-cost="' + u.costUsd + '" data-key="' + u.key + '">Expand Land</button>' +
+           '</div>') +
+       '</div>';
     }).join('');
 
     mount.querySelectorAll('.upgrade-btn:not(:disabled)').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var targetSize = Number(btn.getAttribute('data-size'));
-        var cost = Number(btn.getAttribute('data-cost'));
-        var key = btn.getAttribute('data-key');
-        buyLandUpgradeOnChain(targetSize, cost, key, btn);
+         var cost = Number(btn.getAttribute('data-cost'));
+         var key = btn.getAttribute('data-key');
+         var payment = btn.parentElement.querySelector('[data-payment-upgrade]');
+         buyLandUpgradeOnChain(targetSize, cost, key, btn, payment ? payment.value : 'robinhood:USDG');
       });
     });
   }
@@ -2242,31 +2357,53 @@
      renderWallet();
    }
 
+    function getReadProvider(networkKey) {
+      if (!readProviders[networkKey]) readProviders[networkKey] = new ethers.JsonRpcProvider(NETWORK_CONFIG[networkKey].rpcUrl);
+      return readProviders[networkKey];
+    }
+
+    async function readNetworkBalances(networkKey) {
+      var network = NETWORK_CONFIG[networkKey];
+      var provider = getReadProvider(networkKey);
+      var token = new ethers.Contract(network.stableAddress, ERC20_ABI, provider);
+      var results = await Promise.all([provider.getBalance(userWallet), token.balanceOf(userWallet)]);
+      return {
+        native: Number(ethers.formatEther(results[0])).toFixed(5),
+        stable: Number(ethers.formatUnits(results[1], network.stableDecimals)).toFixed(2)
+      };
+    }
+
     async function refreshWalletBalance() {
       if (!userWallet) return;
-      var nativeEl = document.getElementById('walletNativeBalance');
-      var usdcEl = document.getElementById('walletUsdcBalance');
-      if (nativeEl) nativeEl.textContent = 'Loading...';
-      if (usdcEl) usdcEl.textContent = 'Loading...';
+      walletBalances.baseEth = walletBalances.baseUsdc = walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = 'Loading...';
+      renderWallet();
+      var results = await Promise.allSettled([
+        readNetworkBalances('base'),
+        readNetworkBalances('robinhood')
+      ]);
+      if (results[0].status === 'fulfilled') {
+        walletBalances.baseEth = results[0].value.native;
+        walletBalances.baseUsdc = results[0].value.stable;
+      } else {
+        walletBalances.baseEth = walletBalances.baseUsdc = '--';
+      }
+      if (results[1].status === 'fulfilled') {
+        walletBalances.robinhoodEth = results[1].value.native;
+        walletBalances.robinhoodUsdg = results[1].value.stable;
+      } else {
+        walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = '--';
+      }
+      if (results[0].status === 'rejected' && results[1].status === 'rejected') showBanner('Unable to load Base or Robinhood balances. Try Refresh again.', 'error');
+      renderWallet();
+    }
 
-      try {
-        if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
-        var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, baseReadProvider);
-       var results = await Promise.all([
-         baseReadProvider.getBalance(userWallet),
-         usdc.balanceOf(userWallet)
-       ]);
-       walletBalances.native = Number(ethers.formatEther(results[0])).toFixed(5);
-       walletBalances.usdc = Number(ethers.formatUnits(results[1], 6)).toFixed(2);
-     } catch (err) {
-       walletBalances.native = '--';
-       walletBalances.usdc = '--';
-       showBanner('Unable to load Base wallet balance. Try Refresh again.', 'error');
-     }
-     renderWallet();
-   }
+    function chainIdMatches(value, network) {
+      return String(value).toLowerCase() === network.chainIdHex.toLowerCase() || Number(value) === network.chainId;
+    }
 
-    async function switchToBaseNetwork() {
+    async function switchToNetwork(networkKey) {
+      var network = NETWORK_CONFIG[networkKey];
+      if (!network) throw new Error('Unsupported network.');
       if (authType === 'privy') {
         var bridge = window.__musefarmPrivyBridge;
         var privyProvider = null;
@@ -2289,18 +2426,18 @@
         if (!privyProvider || typeof privyProvider.request !== 'function') {
           throw new Error('Privy embedded wallet provider is unavailable. Please reload the wallet session.');
         }
-        var privyNet = String(await privyProvider.request({ method: 'eth_chainId' })).toLowerCase();
-        if (privyNet !== BASE_CHAIN_ID.toLowerCase()) {
+        var privyNet = await privyProvider.request({ method: 'eth_chainId' });
+        if (!chainIdMatches(privyNet, network)) {
           var switched = false;
           if (bridge && bridge.switchChain) {
             try {
-              await bridge.switchChain(8453);
+              await bridge.switchChain(network.chainId);
               switched = true;
             } catch (switchError) {
               switched = false;
             }
           }
-          if (!switched) await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+          if (!switched) await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: network.chainIdHex }] });
         }
         ethersProvider = new ethers.BrowserProvider(privyProvider);
         ethersSigner = await ethersProvider.getSigner();
@@ -2308,27 +2445,32 @@
         if (userWallet && signerAddress.toLowerCase() !== userWallet.toLowerCase()) {
           throw new Error('Privy signer address does not match the connected wallet.');
         }
+        var resolvedNet = await privyProvider.request({ method: 'eth_chainId' });
+        if (!chainIdMatches(resolvedNet, network)) throw new Error('Privy wallet did not switch to ' + network.name + '.');
         return ethersSigner;
       }
       if (authType !== 'injected' || !window.ethereum) throw new Error('No wallet signer available.');
       if (!ethersProvider) ethersProvider = new ethers.BrowserProvider(window.ethereum);
      var net = await ethersProvider.getNetwork();
-     if (net.chainId !== 8453n) {
-       await window.ethereum.request({
-         method: 'wallet_switchEthereumChain',
-         params: [{ chainId: BASE_CHAIN_ID }]
-       });
+      if (net.chainId !== BigInt(network.chainId)) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: network.chainIdHex }]
+        });
       }
       ethersProvider = new ethers.BrowserProvider(window.ethereum);
       ethersSigner = await ethersProvider.getSigner();
       return ethersSigner;
    }
 
-   async function withdrawFromWallet() {
+    async function withdrawFromWallet() {
      var assetEl = document.getElementById('withdrawAsset');
      var amountEl = document.getElementById('withdrawAmount');
      var destinationEl = document.getElementById('withdrawDestination');
-     var asset = assetEl ? assetEl.value : 'USDC';
+      var assetParts = assetEl ? assetEl.value.split(':') : ['base', 'USDC'];
+      var networkKey = assetParts[0];
+      var asset = assetParts[1];
+      var network = NETWORK_CONFIG[networkKey];
      var amount = amountEl ? amountEl.value.trim() : '';
      var destination = destinationEl ? destinationEl.value.trim() : '';
 
@@ -2347,20 +2489,20 @@
 
       var btn = document.getElementById('withdrawBtn');
       if (btn) btn.disabled = true;
-      showBanner('Preparing ' + asset + ' withdrawal on Base...', 'info');
+       showBanner('Preparing ' + asset + ' withdrawal on ' + network.name + '...', 'info');
 
        try {
          var signer;
          if (authType === 'privy' || authType === 'injected') {
-           signer = await switchToBaseNetwork();
+            signer = await switchToNetwork(networkKey);
         } else {
          throw new Error('No wallet signer available.');
        }
 
        var tx;
-       if (asset === 'USDC') {
-         var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, signer);
-         tx = await usdc.transfer(destination, ethers.parseUnits(amount, 6));
+        if (asset === network.stableSymbol) {
+          var stable = new ethers.Contract(network.stableAddress, ERC20_ABI, signer);
+          tx = await stable.transfer(destination, ethers.parseUnits(amount, network.stableDecimals));
        } else {
          tx = await signer.sendTransaction({ to: destination, value: ethers.parseEther(amount) });
        }
@@ -2368,7 +2510,7 @@
        await tx.wait();
        if (amountEl) amountEl.value = '';
        if (destinationEl) destinationEl.value = '';
-       showBanner('Withdrawal confirmed on Base: ' + tx.hash.slice(0, 12) + '...', 'info');
+        showBanner('Withdrawal confirmed on ' + network.name + ': ' + tx.hash.slice(0, 12) + '...', 'info');
        refreshWalletBalance();
      } catch (err) {
        var message = err && err.code === 'ACTION_REJECTED' ? 'Transaction cancelled by user.' : (err.message || err);
@@ -2406,7 +2548,7 @@
       optsHtml +=
         '<div class="modal-seed-opt ' + (canPlant ? '' : 'disabled') + '" data-seed="' + k + '" data-can="' + canPlant + '">' +
           '<div style="display:flex; align-items:center; gap:8px;">' +
-            '<span style="font-size:22px;">' + cfg.emoji + '</span>' +
+             '<span class="seed-emoji" style="width:28px; height:28px; border-radius:9px; font-size:11px;">' + cfg.mark + '</span>' +
             '<div>' +
               '<div style="font-weight:800; font-size:12px;">' + cfg.name + ' (Seeds: ' + qty + ')</div>' +
               '<div style="font-size:10px; color:var(--ink-muted);">Takes ' + fmtGrowDuration(cfg.growMs) + ' · Yields +' + cfg.yield + ' MUSE</div>' +
@@ -2512,25 +2654,53 @@
     showBanner('Seed upgrade confirmed and saved.', 'info');
   }
 
-  async function payWithPrivy(costUsd) {
-    var signer = await switchToBaseNetwork();
+  async function getEthUsdPrice() {
+    var provider = getReadProvider('robinhood');
+    var feed = new ethers.Contract(ROBINHOOD_ETH_USD_FEED, CHAINLINK_ABI, provider);
+    var result = await feed.latestRoundData();
+    var decimals = await feed.decimals();
+    var price = Number(ethers.formatUnits(result[1], decimals));
+    if (!Number.isFinite(price) || price <= 0) throw new Error('ETH price quote is invalid.');
+    return price;
+  }
+
+  async function payWithPrivy(costUsd, paymentKey) {
+    var parts = String(paymentKey || 'robinhood:USDG').split(':');
+    var networkKey = parts[0];
+    var asset = parts[1];
+    var network = NETWORK_CONFIG[networkKey];
+    if (!network || (asset !== network.stableSymbol && asset !== network.nativeSymbol)) throw new Error('Unsupported payment asset.');
+    var signer = await switchToNetwork(networkKey);
     if (!signer) throw new Error('Privy wallet signer is not available.');
-    var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, signer);
-    var tx = await usdc.transfer(CREATOR_WALLET, ethers.parseUnits(String(costUsd), 6));
-    showBanner('Payment submitted. Waiting for confirmation...', 'info');
+    var amountText;
+    var tx;
+    if (asset === network.stableSymbol) {
+      amountText = Number(costUsd).toFixed(network.stableDecimals);
+      var stable = new ethers.Contract(network.stableAddress, ERC20_ABI, signer);
+      tx = await stable.transfer(CREATOR_WALLET, ethers.parseUnits(amountText, network.stableDecimals));
+    } else {
+      var ethPrice = await getEthUsdPrice();
+      var ethAmount = Number(costUsd) / ethPrice;
+      amountText = ethAmount.toFixed(8);
+      if (Number(amountText) <= 0) throw new Error('ETH amount is below the supported precision.');
+      tx = await signer.sendTransaction({ to: CREATOR_WALLET, value: ethers.parseEther(amountText) });
+    }
+    showBanner('Payment submitted: ' + amountText + ' ' + asset + ' on ' + network.name + '.', 'info');
     await tx.wait();
     return tx;
   }
 
-  async function buySeedOnChain(seedType, costUsd, btnEl) {
+  async function buySeedOnChain(seedType, costUsd, btnEl, paymentKey) {
     var cfg = SEED_CONFIG[seedType];
     if (!cfg) return;
 
     if (btnEl) btnEl.disabled = true;
-    showBanner('Initiating purchase for ' + cfg.name + ' ($' + costUsd + ' USDC)...', 'info');
+     var paymentParts = String(paymentKey || 'robinhood:USDG').split(':');
+     var paymentNetwork = NETWORK_CONFIG[paymentParts[0]];
+     showBanner('Initiating purchase for ' + cfg.name + ' with ' + paymentNetwork.name + ' ' + paymentParts[1] + '...', 'info');
 
     try {
-      await payWithPrivy(costUsd);
+      await payWithPrivy(costUsd, paymentKey);
       state.seedInventory[seedType] = (state.seedInventory[seedType] || 0) + 1;
       persistState();
       renderAll();
@@ -2542,12 +2712,14 @@
     }
   }
 
-  async function buyLandUpgradeOnChain(targetSize, costUsd, key, btnEl) {
+  async function buyLandUpgradeOnChain(targetSize, costUsd, key, btnEl, paymentKey) {
     if (btnEl) btnEl.disabled = true;
-    showBanner('Initiating land expansion ($' + costUsd + ' USDC)...', 'info');
+    var paymentParts = String(paymentKey || 'robinhood:USDG').split(':');
+    var paymentNetwork = NETWORK_CONFIG[paymentParts[0]];
+    showBanner('Initiating land expansion with ' + paymentNetwork.name + ' ' + paymentParts[1] + '...', 'info');
 
     try {
-      await payWithPrivy(costUsd);
+      await payWithPrivy(costUsd, paymentKey);
       state.gridSize = targetSize;
       var targetPlots = (GRID_CONFIG[key] && GRID_CONFIG[key].plots) || targetSize * targetSize;
       while (state.plots.length < targetPlots) {
@@ -2672,8 +2844,10 @@
        });
      }
 
-     var refreshWalletBtn = document.getElementById('refreshWalletBtn');
-     if (refreshWalletBtn) refreshWalletBtn.addEventListener('click', refreshWalletBalance);
+      var refreshWalletBtn = document.getElementById('refreshWalletBtn');
+      if (refreshWalletBtn) refreshWalletBtn.addEventListener('click', refreshWalletBalance);
+      var refreshWorkspaceWalletBtn = document.getElementById('refreshWorkspaceWalletBtn');
+      if (refreshWorkspaceWalletBtn) refreshWorkspaceWalletBtn.addEventListener('click', refreshWalletBalance);
 
      var withdrawBtn = document.getElementById('withdrawBtn');
      if (withdrawBtn) withdrawBtn.addEventListener('click', withdrawFromWallet);
@@ -2695,7 +2869,7 @@
       '<div class="modal-backdrop" id="lbBackdrop">' +
         '<div class="lightbox-card">' +
           '<img src="https://cdn.phototourl.com/free/2026-09-17-3e6a5bd9-0bb7-40b9-a276-bfc3883a97e8.png" alt="Farmer Full Artwork" />' +
-          '<div class="lightbox-title">🌾 MUSEFARM Official Avatar</div>' +
+           '<div class="lightbox-title">MUSEFARM Official Avatar</div>' +
           '<div class="lightbox-desc">Full 1277×1277 High Resolution Artwork</div>' +
           '<button class="modal-close" id="lbCloseBtn">Close View</button>' +
         '</div>' +
@@ -2816,12 +2990,12 @@
        var topbar = document.getElementById('topbar');
        if (topbar) topbar.style.display = 'flex';
      if (title) title.textContent = 'Privy Wallet Ready';
-     if (message) message.textContent = 'Your X/Google account now has an embedded wallet connected to Base.';
+      if (message) message.textContent = 'Your X/Google account now has a Privy signer ready for Base and Robinhood Chain.';
      if (options) options.style.display = 'none';
-     if (note) note.textContent = 'This wallet is controlled through your Privy account and can sign on-chain transactions.';
+      if (note) note.textContent = 'This signer is controlled through Privy. Address and balances are visible in the field header.';
      if (status) status.style.display = 'block';
       if (addressEl) addressEl.textContent = address;
-      if (explorer) explorer.href = 'https://basescan.org/address/' + address;
+       if (explorer) explorer.href = NETWORK_CONFIG.robinhood.explorer + address;
        document.getElementById('walletLabel').textContent = 'Privy · ' + shortAddr(address);
       var syncEl = document.getElementById('lastSyncTime');
       if (syncEl) syncEl.textContent = 'PRIVY WALLET READY';

@@ -1573,10 +1573,15 @@
 
       function PrivyBridge() {
         var privy = Privy.usePrivy();
-        var walletState = Privy.useWallets();
-        var walletCreator = Privy.useCreateWallet();
-        var createInProgress = React.useRef(false);
-        var createdWallet = React.useRef(null);
+       var walletState = Privy.useWallets();
+       var walletCreator = Privy.useCreateWallet();
+       var createInProgress = React.useRef(false);
+       var createdWallet = React.useRef(null);
+       var latestWallet = React.useRef(null);
+       var latestWalletReady = React.useRef(false);
+       var latestAuthenticated = React.useRef(false);
+       latestWalletReady.current = walletState.ready;
+       latestAuthenticated.current = privy.authenticated;
         var oauth = Privy.useLoginWithOAuth({
           onError: function (error) {
             reportPrivyError(error);
@@ -1584,10 +1589,37 @@
         });
 
         React.useEffect(function () {
-          window.__musefarmPrivyBridge = {
-            login: function (provider) { return oauth.initOAuth({ provider: provider }); },
-            logout: privy.logout
-          };
+         window.__musefarmPrivyBridge = {
+           login: function (provider) { return oauth.initOAuth({ provider: provider }); },
+           logout: privy.logout,
+           getEthereumProvider: async function () {
+             var wallet = latestWallet.current || createdWallet.current;
+             if (!wallet && latestAuthenticated.current && latestWalletReady.current && !createInProgress.current) {
+               createInProgress.current = true;
+               try {
+                 var created = await walletCreator.createWallet();
+                 wallet = created && created.wallet ? created.wallet : created;
+                 createdWallet.current = wallet;
+                 latestWallet.current = wallet;
+               } finally {
+                 createInProgress.current = false;
+               }
+             }
+             if (!wallet) throw new Error('Privy embedded wallet is still loading.');
+             if (typeof wallet.getEthereumProvider === 'function') return wallet.getEthereumProvider();
+             if (typeof wallet.getProvider === 'function') return wallet.getProvider();
+             var provider = wallet.provider || wallet.ethereumProvider;
+             if (provider && typeof provider.request === 'function') return provider;
+             throw new Error('Privy embedded wallet provider is unavailable.');
+           },
+           switchChain: async function (chainId) {
+             var wallet = latestWallet.current || createdWallet.current;
+             if (wallet && typeof wallet.switchChain === 'function') return wallet.switchChain(chainId);
+             var provider = await window.__musefarmPrivyBridge.getEthereumProvider();
+             var requestedChain = typeof chainId === 'number' ? '0x' + chainId.toString(16) : chainId;
+             return provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: requestedChain }] });
+           }
+         };
           var onLogin = function (event) {
             oauth.initOAuth({ provider: event.detail.provider });
           };
@@ -1617,12 +1649,14 @@
             var clientType = String(wallet.walletClientType || '').toLowerCase();
             return clientType === 'privy' || clientType.indexOf('privy') !== -1;
           });
-          var wallet = embedded || createdWallet.current;
-          if (!wallet && walletState.ready && !createInProgress.current) {
+           var wallet = embedded || createdWallet.current;
+           latestWallet.current = wallet || null;
+           if (!wallet && walletState.ready && !createInProgress.current) {
             createInProgress.current = true;
               walletCreator.createWallet().then(function (created) {
-               var wallet = created && created.wallet ? created.wallet : created;
-               createdWallet.current = wallet;
+                var wallet = created && created.wallet ? created.wallet : created;
+                createdWallet.current = wallet;
+                latestWallet.current = wallet;
                publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet });
              }).catch(function (error) {
                createdWallet.current = null;
@@ -2232,28 +2266,42 @@
      renderWallet();
    }
 
-   async function switchToBaseNetwork() {
-     if (authType === 'privy' && privyWallet && privyWallet.getEthereumProvider) {
-       var privyProvider = await privyWallet.getEthereumProvider();
-       var privyNet = await privyProvider.request({ method: 'eth_chainId' });
-       if (privyNet !== BASE_CHAIN_ID) {
-         await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
-       }
-       ethersProvider = new ethers.BrowserProvider(privyProvider);
-       ethersSigner = await ethersProvider.getSigner();
-       return;
-     }
-     if (authType !== 'injected' || !window.ethereum) return;
-     if (!ethersProvider) ethersProvider = new ethers.BrowserProvider(window.ethereum);
+    async function switchToBaseNetwork() {
+      if (authType === 'privy') {
+        var bridge = window.__musefarmPrivyBridge;
+        var privyProvider = bridge && bridge.getEthereumProvider
+          ? await bridge.getEthereumProvider()
+          : (privyWallet && typeof privyWallet.getEthereumProvider === 'function'
+            ? await privyWallet.getEthereumProvider()
+            : null);
+        if (!privyProvider || typeof privyProvider.request !== 'function') {
+          throw new Error('Privy embedded wallet provider is unavailable. Please reload the wallet session.');
+        }
+        var privyNet = String(await privyProvider.request({ method: 'eth_chainId' })).toLowerCase();
+        if (privyNet !== BASE_CHAIN_ID.toLowerCase()) {
+          if (bridge && bridge.switchChain) await bridge.switchChain(8453);
+          else await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        }
+        ethersProvider = new ethers.BrowserProvider(privyProvider);
+        ethersSigner = await ethersProvider.getSigner();
+        var signerAddress = await ethersSigner.getAddress();
+        if (userWallet && signerAddress.toLowerCase() !== userWallet.toLowerCase()) {
+          throw new Error('Privy signer address does not match the connected wallet.');
+        }
+        return ethersSigner;
+      }
+      if (authType !== 'injected' || !window.ethereum) throw new Error('No wallet signer available.');
+      if (!ethersProvider) ethersProvider = new ethers.BrowserProvider(window.ethereum);
      var net = await ethersProvider.getNetwork();
      if (net.chainId !== 8453n) {
        await window.ethereum.request({
          method: 'wallet_switchEthereumChain',
          params: [{ chainId: BASE_CHAIN_ID }]
        });
-     }
-     ethersProvider = new ethers.BrowserProvider(window.ethereum);
-     ethersSigner = await ethersProvider.getSigner();
+      }
+      ethersProvider = new ethers.BrowserProvider(window.ethereum);
+      ethersSigner = await ethersProvider.getSigner();
+      return ethersSigner;
    }
 
    async function withdrawFromWallet() {
@@ -2283,9 +2331,8 @@
 
        try {
          var signer;
-        if (authType === 'privy' || authType === 'injected') {
-          await switchToBaseNetwork();
-          signer = ethersSigner;
+         if (authType === 'privy' || authType === 'injected') {
+           signer = await switchToBaseNetwork();
         } else {
          throw new Error('No wallet signer available.');
        }
@@ -2446,9 +2493,9 @@
   }
 
   async function payWithPrivy(costUsd) {
-    await switchToBaseNetwork();
-    if (!ethersSigner) throw new Error('Privy wallet signer is not available.');
-    var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, ethersSigner);
+    var signer = await switchToBaseNetwork();
+    if (!signer) throw new Error('Privy wallet signer is not available.');
+    var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, signer);
     var tx = await usdc.transfer(CREATOR_WALLET, ethers.parseUnits(String(costUsd), 6));
     showBanner('Payment submitted. Waiting for confirmation...', 'info');
     await tx.wait();

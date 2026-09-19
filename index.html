@@ -765,6 +765,15 @@
   .wallet-help { font-size: 10px; line-height: 1.45; color: var(--ink-muted); }
   .wallet-network { font-size: 10px; font-weight: 800; color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; padding: 3px 7px; border-radius: 12px; }
   .wallet-summary-multichain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .token-balance-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius-md); background: #f7fafc;
+    border: 1px solid #e2e8f0;
+  }
+  .token-balance-card-label { color: var(--ink-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .65px; }
+  .token-balance-card-value { margin-top: 3px; color: var(--leaf-dark); font-size: 17px; font-weight: 950; }
+  .token-balance-card-link { color: #2b6cb0; font-size: 10px; font-weight: 900; text-decoration: none; white-space: nowrap; }
+  .token-balance-card-link:hover { text-decoration: underline; }
   .privy-wallet-banner {
     grid-column: 1 / -1; display: grid; grid-template-columns: minmax(180px, .8fr) minmax(220px, 1.2fr) auto;
     align-items: center; gap: 14px; padding: 13px 16px; border-radius: 18px;
@@ -1276,6 +1285,10 @@
   .payment-select { background: rgba(3, 14, 9, 0.52) !important; color: #e0ead7 !important; border-color: var(--premium-line) !important; }
   .payment-select option { background: #0b2116; color: #e0ead7; }
   .wallet-balance-value { color: #dceacb; }
+  .token-balance-card { background: linear-gradient(145deg, rgba(25, 54, 36, 0.82), rgba(10, 28, 19, 0.88)); border-color: var(--premium-line); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+  .token-balance-card-label { color: var(--premium-muted); }
+  .token-balance-card-value { color: #f0cf82; }
+  .token-balance-card-link { color: #c6dcff; }
 
   .banner-box.info { background: rgba(126, 181, 105, 0.16); color: #cde7bd; border-color: rgba(141,189,121,0.26); }
   .banner-box.error { background: rgba(194, 83, 76, 0.16); color: #ffb7af; border-color: rgba(234, 124, 116, 0.28); }
@@ -1366,6 +1379,7 @@
    .menu-card .claim-btn { color: #213629 !important; }
    .menu-card #tabTreasury .treasury-header > span:first-child { color: #dce9c9 !important; }
    .menu-card #tabLeaderboard #refreshLbBtn { color: #173b28 !important; }
+   .menu-card .mechanism-card a { color: #f0cf82; font-weight: 900; }
 
   @media (max-width: 900px) and (min-width: 768px) {
     .signin-panel { grid-template-columns: 1fr 0.82fr; }
@@ -1471,7 +1485,7 @@
             <div class="privy-status-label" id="privyWalletStatusLabel">PRIVY SIGNER READY</div>
             <div class="privy-status-message" id="privyWalletStatusMessage">Privy is preparing your embedded wallet.</div>
             <div id="privyWalletAddress" class="privy-status-address"></div>
-            <div class="privy-status-balance"><strong id="privyBaseEthBalance">-- ETH</strong> · <strong id="privyBaseUsdcBalance">-- USDC</strong> · <strong id="privyRobinhoodEthBalance">-- ETH</strong> · <strong id="privyRobinhoodUsdgBalance">-- USDG</strong></div>
+            <div class="privy-status-balance"><strong id="privyBaseEthBalance">-- ETH</strong> · <strong id="privyBaseUsdcBalance">-- USDC</strong> · <strong id="privyRobinhoodEthBalance">-- ETH</strong> · <strong id="privyRobinhoodUsdgBalance">-- USDG</strong> · <strong id="privyRobinhoodMusefarmBalance">-- MUSEFARM</strong></div>
             <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer">View wallet activity ↗</a>
             <button class="privy-create-wallet-btn" id="privyCreateWalletBtn" type="button" style="display:none;">Create embedded wallet</button>
             <button class="modal-close" id="privyLogoutBtn" type="button">Sign out</button>
@@ -1620,11 +1634,15 @@
                   <div class="wallet-balance-label">Robinhood ETH</div>
                   <div class="wallet-balance-value" id="walletRobinhoodEthBalance">-- ETH</div>
                 </div>
-                <div class="wallet-balance">
-                  <div class="wallet-balance-label">Robinhood USDG</div>
-                  <div class="wallet-balance-value" id="walletRobinhoodUsdgBalance">-- USDG</div>
-                </div>
-              </div>
+                 <div class="wallet-balance">
+                   <div class="wallet-balance-label">Robinhood USDG</div>
+                   <div class="wallet-balance-value" id="walletRobinhoodUsdgBalance">-- USDG</div>
+                 </div>
+               </div>
+               <div class="token-balance-card">
+                 <div><div class="token-balance-card-label">Robinhood reward token</div><div class="token-balance-card-value" id="walletRobinhoodMusefarmBalance">-- MUSEFARM</div></div>
+                 <a class="token-balance-card-link" href="https://robinhoodchain.blockscout.com/address/0x6d3855ce4996eb3a909606413658096719d25ba3" target="_blank" rel="noreferrer">View contract ↗</a>
+               </div>
 
              <div class="wallet-form">
                <h4>Deposit</h4>
@@ -1707,12 +1725,12 @@
               <span class="treasury-badge">Merkle Vault</span>
             </div>
 
-            <div class="mechanism-card">
-               <strong>Reward accounting:</strong><br/>
-               • <strong>1 MUSE = 2 reward score</strong> in the live ledger.<br/>
-               • Every crop harvested updates your score in real-time.<br/>
-               • The score is not a claimable token until a distributor contract is deployed.<br/>
-               • Claiming stays disabled until the contract and allocation snapshot are live.
+             <div class="mechanism-card">
+                <strong>$MUSEFARM is live on Robinhood Chain.</strong><br/>
+                • Contract: <a href="https://robinhoodchain.blockscout.com/address/0x6d3855ce4996eb3a909606413658096719d25ba3" target="_blank" rel="noreferrer">0x6d3855...d25ba3 ↗</a><br/>
+                • <strong>1 MUSE = 2 reward score</strong> in the live ledger.<br/>
+                • Every crop harvested updates your score in real-time.<br/>
+                • Claiming stays disabled until a funded distributor/allocation snapshot is configured.
             </div>
 
             <div>
@@ -1728,8 +1746,8 @@
 
             <div class="claim-action-box">
               <button class="claim-btn" disabled id="claimTokenBtn">Claim Distributing Soon</button>
-              <div style="font-size:10px; color:var(--ink-muted); margin-top:6px;">
-                Merkle distributor contract will be deployed upon token launch. All harvest scores are permanently recorded.
+               <div style="font-size:10px; color:var(--ink-muted); margin-top:6px;">
+                 Token contract is live. The claim distributor and allocation snapshot still need to be configured.
               </div>
             </div>
           </div>
@@ -1936,16 +1954,18 @@
         chainParams: { chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }
       },
       robinhood: {
-        key: 'robinhood', name: 'Robinhood Chain', chainId: 4663, chainIdHex: '0x1237',
-        rpcUrl: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com/address/',
-        nativeSymbol: 'ETH', stableSymbol: 'USDG', stableAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', stableDecimals: 6,
-        chainParams: { chainId: '0x1237', chainName: 'Robinhood Chain', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'], blockExplorerUrls: ['https://robinhoodchain.blockscout.com'] }
+         key: 'robinhood', name: 'Robinhood Chain', chainId: 4663, chainIdHex: '0x1237',
+         rpcUrl: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com/address/',
+         nativeSymbol: 'ETH', stableSymbol: 'USDG', stableAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', stableDecimals: 6,
+         rewardTokenSymbol: 'MUSEFARM', rewardTokenAddress: '0x6d3855ce4996eb3a909606413658096719d25ba3', rewardTokenDecimals: 18,
+         chainParams: { chainId: '0x1237', chainName: 'Robinhood Chain', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'], blockExplorerUrls: ['https://robinhoodchain.blockscout.com'] }
       }
    };
    var ERC20_ABI = [
-     'function transfer(address to, uint256 amount) returns (bool)',
-     'function balanceOf(address owner) view returns (uint256)',
-     'function decimals() view returns (uint8)'
+      'function transfer(address to, uint256 amount) returns (bool)',
+      'function balanceOf(address owner) view returns (uint256)',
+      'function decimals() view returns (uint8)',
+      'function symbol() view returns (string)'
    ];
    var CHAINLINK_ABI = [
      'function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)',
@@ -2007,7 +2027,7 @@
    var ethersProvider = null;
    var ethersSigner = null;
    var readProviders = {};
-   var walletBalances = { baseEth: '--', baseUsdc: '--', robinhoodEth: '--', robinhoodUsdg: '--' };
+    var walletBalances = { baseEth: '--', baseUsdc: '--', robinhoodEth: '--', robinhoodUsdg: '--', robinhoodMusefarm: '--' };
     var currentPlot = null;
     var privyWallet = null;
     var liveSyncTimer = null;
@@ -2029,7 +2049,7 @@
      ethersProvider = null;
      ethersSigner = null;
      state = null;
-     walletBalances = { baseEth: '--', baseUsdc: '--', robinhoodEth: '--', robinhoodUsdg: '--' };
+     walletBalances = { baseEth: '--', baseUsdc: '--', robinhoodEth: '--', robinhoodUsdg: '--', robinhoodMusefarm: '--' };
      var walletBanner = document.getElementById('privyWalletBanner');
      if (walletBanner) walletBanner.style.display = 'none';
      var topbar = document.getElementById('topbar');
@@ -2322,13 +2342,15 @@
      if (addressEl) addressEl.textContent = userWallet || '--';
       var balanceMap = {
         walletBaseEthBalance: walletBalances.baseEth + ' ETH',
-        walletBaseUsdcBalance: walletBalances.baseUsdc + ' USDC',
-        walletRobinhoodEthBalance: walletBalances.robinhoodEth + ' ETH',
-        walletRobinhoodUsdgBalance: walletBalances.robinhoodUsdg + ' USDG',
-        privyBaseEthBalance: walletBalances.baseEth + ' ETH',
-        privyBaseUsdcBalance: walletBalances.baseUsdc + ' USDC',
-        privyRobinhoodEthBalance: walletBalances.robinhoodEth + ' ETH',
-        privyRobinhoodUsdgBalance: walletBalances.robinhoodUsdg + ' USDG'
+         walletBaseUsdcBalance: walletBalances.baseUsdc + ' USDC',
+         walletRobinhoodEthBalance: walletBalances.robinhoodEth + ' ETH',
+         walletRobinhoodUsdgBalance: walletBalances.robinhoodUsdg + ' USDG',
+         walletRobinhoodMusefarmBalance: walletBalances.robinhoodMusefarm + ' MUSEFARM',
+         privyBaseEthBalance: walletBalances.baseEth + ' ETH',
+         privyBaseUsdcBalance: walletBalances.baseUsdc + ' USDC',
+         privyRobinhoodEthBalance: walletBalances.robinhoodEth + ' ETH',
+         privyRobinhoodUsdgBalance: walletBalances.robinhoodUsdg + ' USDG',
+         privyRobinhoodMusefarmBalance: walletBalances.robinhoodMusefarm + ' MUSEFARM'
       };
       Object.keys(balanceMap).forEach(function (id) {
         var el = document.getElementById(id);
@@ -2339,7 +2361,7 @@
       var walletBanner = document.getElementById('privyWalletBanner');
       if (walletBanner && userWallet) walletBanner.style.display = 'grid';
       if (workspaceAddress) workspaceAddress.textContent = userWallet || 'Waiting for wallet address';
-      if (workspaceBalances) workspaceBalances.textContent = 'Base ' + walletBalances.baseEth + ' ETH · ' + walletBalances.baseUsdc + ' USDC  |  Robinhood ' + walletBalances.robinhoodEth + ' ETH · ' + walletBalances.robinhoodUsdg + ' USDG';
+       if (workspaceBalances) workspaceBalances.textContent = 'Base ' + walletBalances.baseEth + ' ETH · ' + walletBalances.baseUsdc + ' USDC  |  Robinhood ' + walletBalances.robinhoodEth + ' ETH · ' + walletBalances.robinhoodUsdg + ' USDG · ' + walletBalances.robinhoodMusefarm + ' MUSEFARM';
    }
 
   function renderPlots() {
@@ -2590,15 +2612,25 @@
       return readProviders[networkKey];
     }
 
-    async function readNetworkBalances(networkKey) {
-      var network = NETWORK_CONFIG[networkKey];
-      var provider = getReadProvider(networkKey);
-      var token = new ethers.Contract(network.stableAddress, ERC20_ABI, provider);
-      var results = await Promise.all([provider.getBalance(userWallet), token.balanceOf(userWallet)]);
-      return {
-        native: Number(ethers.formatEther(results[0])).toFixed(5),
-        stable: Number(ethers.formatUnits(results[1], network.stableDecimals)).toFixed(2)
-      };
+     async function readNetworkBalances(networkKey) {
+       var network = NETWORK_CONFIG[networkKey];
+       var provider = getReadProvider(networkKey);
+       var token = new ethers.Contract(network.stableAddress, ERC20_ABI, provider);
+       var results = await Promise.all([provider.getBalance(userWallet), token.balanceOf(userWallet)]);
+       var reward = '--';
+       if (network.rewardTokenAddress) {
+         try {
+           var rewardToken = new ethers.Contract(network.rewardTokenAddress, ERC20_ABI, provider);
+           reward = Number(ethers.formatUnits(await rewardToken.balanceOf(userWallet), network.rewardTokenDecimals)).toFixed(4);
+         } catch (rewardError) {
+           reward = '--';
+         }
+       }
+       return {
+         native: Number(ethers.formatEther(results[0])).toFixed(5),
+         stable: Number(ethers.formatUnits(results[1], network.stableDecimals)).toFixed(2),
+         reward: reward
+       };
     }
 
     function syncPaymentDefaults() {
@@ -2615,7 +2647,7 @@
 
     async function refreshWalletBalance() {
       if (!userWallet) return;
-      walletBalances.baseEth = walletBalances.baseUsdc = walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = 'Loading...';
+       walletBalances.baseEth = walletBalances.baseUsdc = walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = walletBalances.robinhoodMusefarm = 'Loading...';
       renderWallet();
       var results = await Promise.allSettled([
         readNetworkBalances('base'),
@@ -2627,11 +2659,12 @@
       } else {
         walletBalances.baseEth = walletBalances.baseUsdc = '--';
       }
-      if (results[1].status === 'fulfilled') {
-        walletBalances.robinhoodEth = results[1].value.native;
-        walletBalances.robinhoodUsdg = results[1].value.stable;
-      } else {
-        walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = '--';
+       if (results[1].status === 'fulfilled') {
+         walletBalances.robinhoodEth = results[1].value.native;
+         walletBalances.robinhoodUsdg = results[1].value.stable;
+         walletBalances.robinhoodMusefarm = results[1].value.reward;
+       } else {
+         walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = walletBalances.robinhoodMusefarm = '--';
       }
       if (results[0].status === 'rejected' && results[1].status === 'rejected') showBanner('Unable to load Base or Robinhood balances. Try Refresh again.', 'error');
       renderWallet();

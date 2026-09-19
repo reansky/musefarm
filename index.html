@@ -271,11 +271,11 @@
   }
   .buy-btn:hover { background: linear-gradient(135deg, var(--leaf), var(--leaf-dark)); transform: translateY(-1px); }
   .buy-btn:disabled { background: #cbd5e0; cursor: not-allowed; box-shadow: none; color: #718096; }
-  .buy-btn.x402-btn {
+  .buy-btn.privy-pay-btn {
     background: linear-gradient(135deg, #3182ce, #2b6cb0);
     box-shadow: 0 2px 6px rgba(49,130,206,0.3);
   }
-  .buy-btn.x402-btn:hover { background: linear-gradient(135deg, #2b6cb0, #2c5282); }
+  .buy-btn.privy-pay-btn:hover { background: linear-gradient(135deg, #2b6cb0, #2c5282); }
 
   /* Seed Upgrade / Synthesis Cards */
   .recipe-card {
@@ -1130,7 +1130,7 @@
   .seed-price-tag.paid, .upgrade-price { background: rgba(112, 158, 212, 0.14); color: #c5dbff; border-color: rgba(139, 177, 227, 0.24); }
   .buy-btn, .craft-btn, .upgrade-btn { border: 1px solid rgba(255,255,255,0.1); }
   .buy-btn { background: linear-gradient(135deg, #82b86f, #4e7e59); }
-  .buy-btn.x402-btn { background: linear-gradient(135deg, #557fbd, #31558b); }
+  .buy-btn.privy-pay-btn { background: linear-gradient(135deg, #557fbd, #31558b); }
   .craft-btn { background: linear-gradient(135deg, #e4be68, #a77432); }
   .recipe-actions { border-top-color: var(--premium-line); }
   .upgrade-btn { background: linear-gradient(135deg, #d8ad59, #92682c); }
@@ -1168,11 +1168,14 @@
     background: linear-gradient(125deg, rgba(17, 44, 29, 0.98), rgba(8, 21, 14, 0.98)) !important;
     border-radius: 28px;
   }
-  #signinGate[style*="display: block"] { display: grid !important; }
+  #signinGate[style*="display: grid"] { display: grid !important; }
   .signin-showcase { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 620px; padding: 34px 42px 32px; overflow: hidden; background: radial-gradient(circle at 80% 12%, rgba(231, 190, 104, 0.17), transparent 17rem), linear-gradient(145deg, rgba(29, 67, 42, 0.88), rgba(10, 28, 18, 0.28)); }
+  .signin-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.62; filter: saturate(0.78) contrast(1.03); background: #183624; }
+  .signin-showcase-video-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 20, 12, 0.84) 0%, rgba(7, 25, 15, 0.48) 52%, rgba(5, 16, 10, 0.24) 100%), linear-gradient(0deg, rgba(5, 16, 10, 0.72), transparent 55%); pointer-events: none; }
   .signin-showcase::before { content: ''; position: absolute; width: 380px; height: 380px; right: -90px; bottom: -150px; border: 1px solid rgba(230,191,109,0.16); border-radius: 50%; box-shadow: 0 0 0 28px rgba(230,191,109,0.035), 0 0 0 56px rgba(230,191,109,0.025); }
   .signin-showcase::after { content: ''; position: absolute; inset: 0; opacity: 0.16; background-image: linear-gradient(115deg, transparent 0 49%, rgba(230,191,109,0.26) 49.2%, transparent 49.6%), linear-gradient(18deg, transparent 0 68%, rgba(141,189,121,0.18) 68.2%, transparent 68.5%); pointer-events: none; }
   .signin-showcase > * { position: relative; z-index: 1; }
+  .signin-showcase > .signin-hero-video, .signin-showcase > .signin-showcase-video-overlay { position: absolute; z-index: 0; }
   .signin-showcase-head, .signin-auth-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .signin-eyebrow, .signin-auth-topline, .signin-provider-label { font-size: 10px; font-weight: 900; letter-spacing: 1.6px; color: #a8c497; }
   .signin-live { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 800; letter-spacing: 1px; color: #d7e8c9; }
@@ -1220,14 +1223,15 @@
     .signin-showcase h2 { font-size: 45px !important; }
     .signin-auth { padding: 34px 25px; }
   }
-  @media (max-width: 767px) {
+   @media (max-width: 767px) {
     #app { padding: 10px 10px 28px; }
     .topbar { min-height: 0; padding: 14px 12px; border-radius: 18px; }
     .brand .logo { font-size: 32px; }
     .brand h1 { font-size: 21px; }
     .signin-panel { display: flex; flex-direction: column; min-height: 0; margin-top: 8px; border-radius: 22px; }
-    #signinGate[style*="display: block"] { display: flex !important; }
-    .signin-showcase { min-height: 390px; padding: 23px 22px 25px; }
+     #signinGate[style*="display: grid"] { display: flex !important; }
+     .signin-showcase { min-height: 390px; padding: 23px 22px 25px; }
+     .signin-hero-video { opacity: 0.58; }
     .signin-orbit { width: 134px; height: 134px; right: 7%; top: 19%; }
     .signin-mark { font-size: 54px; margin-top: 70px; margin-bottom: 16px; }
     .signin-showcase h2 { font-size: 39px !important; letter-spacing: -2px; }
@@ -1258,9 +1262,9 @@
 </div>
 <div id="app">
   <!-- Symmetrical Top Bar -->
-  <div class="topbar">
+  <div class="topbar" id="topbar" style="display:none;">
     <div class="brand">
-      <span class="logo">🌾</span>
+      <span class="logo">MF</span>
       <div class="brand-meta">
         <div class="brand-title-wrap">
           <h1>MUSEFARM</h1>
@@ -1272,27 +1276,31 @@
       </div>
     </div>
     <div class="stats">
-      <div class="stat-chip">💰 <span class="val" id="musePoints">--</span> MUSE</div>
-      <div class="stat-chip">⭐ Lv <span class="val" id="farmerLevel">--</span></div>
-      <div class="stat-chip">⚡ <span class="val" id="staminaPoints">--</span>/<span id="staminaMax">20</span></div>
+      <div class="stat-chip"><span class="stat-symbol">M</span><span class="val" id="musePoints">--</span> MUSE</div>
+      <div class="stat-chip"><span class="stat-symbol">LV</span><span class="val" id="farmerLevel">--</span></div>
+      <div class="stat-chip"><span class="stat-symbol">ST</span><span class="val" id="staminaPoints">--</span>/<span id="staminaMax">20</span></div>
       <div class="wallet-chip" id="walletLabel">connecting...</div>
     </div>
   </div>
 
   <div id="mainContainer">
     <!-- Sign In Gate -->
-    <div class="card signin-panel" id="signinGate" style="display:none;">
+      <div class="card signin-panel" id="signinGate" style="display:none;">
       <div class="signin-showcase">
+        <video class="signin-hero-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
+          <source src="assets/musefarm-hero.mp4" type="video/mp4" />
+        </video>
+        <div class="signin-showcase-video-overlay" aria-hidden="true"></div>
         <div class="signin-showcase-head">
           <span class="signin-eyebrow">FIELD OPERATIONS / 001</span>
           <span class="signin-live"><span></span> LIVE ON BASE</span>
         </div>
-        <div class="signin-orbit" aria-hidden="true"><span>✦</span></div>
-        <div class="signin-mark" aria-hidden="true">🌾</div>
+        <div class="signin-orbit" aria-hidden="true"></div>
+        <div class="signin-mark" aria-hidden="true">MF</div>
         <div class="signin-showcase-copy">
-          <div class="signin-kicker">A living economy for patient growers</div>
+          <div class="signin-kicker">Harvest Moon field operations</div>
           <h2>Grow something<br><em>worth keeping.</em></h2>
-          <p>Plant, harvest, and build your onchain field one season at a time. MUSEFARM turns consistency into compounding progress.</p>
+          <p>Plant, harvest, and build your field one season at a time. MUSEFARM turns consistency into compounding progress.</p>
         </div>
         <div class="signin-showcase-footer">
           <div><strong>01</strong><span>Plant with intent</span></div>
@@ -1337,8 +1345,8 @@
           <div class="farmer-avatar-frame" id="farmerAvatarFrame" title="Click to view full uncropped artwork">
             <img id="farmerAvatar" src="https://cdn.phototourl.com/free/2026-09-17-3e6a5bd9-0bb7-40b9-a276-bfc3883a97e8.png" alt="farmer"
                  onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='flex';" />
-            <div class="fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">👩‍🌾</div>
-            <span class="zoom-hint">🔍 Zoom</span>
+            <div class="fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">FARMER</div>
+            <span class="zoom-hint">Zoom</span>
           </div>
 
           <div class="farmer-details-wrap">
@@ -1374,8 +1382,8 @@
 
        <!-- Center Column: Farm Grid -->
        <div class="card farm-container">
-         <div class="farm-hero-strip">
-           <span class="farm-hero-kicker">✦ ACTIVE GARDEN</span>
+          <div class="farm-hero-strip">
+            <span class="farm-hero-kicker">ACTIVE GARDEN</span>
            <span class="farm-hero-copy">Grow · Harvest · Evolve</span>
          </div>
          <div class="farm-header-wrap">
@@ -1383,11 +1391,11 @@
             <span style="font-size:13px; font-weight:800; text-transform:uppercase; color:var(--leaf-dark); letter-spacing:0.8px;">
               Active Plots (<span id="gridTitle">3x3</span>)
             </span>
-            <button id="quickUpgradeBtn" style="background:#fefcbf; border:1px solid #faf089; border-radius:12px; padding:3px 10px; font-size:11px; font-weight:800; color:#744210; cursor:pointer;">🏗️ Land Upgrade</button>
+             <button id="quickUpgradeBtn" style="background:#fefcbf; border:1px solid #faf089; border-radius:12px; padding:3px 10px; font-size:11px; font-weight:800; color:#744210; cursor:pointer;">Land Upgrade</button>
           </div>
           <div class="farm-subtitle-row">
             <span style="color:var(--leaf);">Tap plot to Plant or Harvest</span>
-             <span style="color:var(--ink-muted); font-size:10px;">Live Farm State</span>
+             <span style="color:var(--ink-muted); font-size:10px;">Local Farm State</span>
           </div>
         </div>
 
@@ -1402,7 +1410,7 @@
          <div class="tab-nav">
            <button class="tab-btn" data-tab="wallet">Wallet</button>
            <button class="tab-btn active" data-tab="shop">Seed Shop</button>
-          <button class="tab-btn" data-tab="synthesis">✨ Seed Upgrade</button>
+           <button class="tab-btn" data-tab="synthesis">Seed Upgrade</button>
           <button class="tab-btn" data-tab="upgrade">Land Upgrade</button>
           <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
            <button class="tab-btn" data-tab="treasury">Rewards & Score</button>
@@ -1457,7 +1465,7 @@
          <!-- Shop Tab -->
         <div id="tabShop">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-            Free Wheat capped at <strong>10x per day</strong>. Premium seeds are <strong>permanent & reusable</strong> (seed returns to your inventory on harvest so you can replant forever!) and settle via <strong>x402 USDC on Base</strong>.
+             Free Wheat capped at <strong>10x per day</strong>. Premium seeds are <strong>permanent & reusable</strong> and settle by direct <strong>USDC transfer from your Privy wallet on Base</strong>.
           </div>
           <div class="shop-scroll" id="seedShopList"></div>
         </div>
@@ -1465,7 +1473,7 @@
         <!-- Seed Upgrade / Synthesis Tab -->
         <div id="tabSynthesis" style="display:none;">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-            🌾 <strong>Upgrade Seeds from Harvested Crops</strong>: Seeds can only be upgraded using crops you have <strong>already harvested</strong> from your farm.
+             <strong>Upgrade Seeds from Harvested Crops</strong>: Seeds can only be upgraded using crops you have <strong>already harvested</strong> from your farm.
           </div>
           <div class="shop-scroll" id="synthesisList"></div>
         </div>
@@ -1473,16 +1481,16 @@
         <!-- Land Upgrade Tab -->
         <div id="tabUpgrade" style="display:none;">
           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-             Expand your farm territory with <strong>x402 USDC on Base</strong>. The payment is confirmed before the live farm updates.
+             Expand your farm territory with <strong>USDC on Base via Privy</strong>. The payment is confirmed before the farm updates.
           </div>
           <div id="upgradeList"></div>
         </div>
 
         <!-- Leaderboard Tab -->
          <div id="tabLeaderboard" style="display:none;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-             <span style="font-size:11px; color:var(--ink-muted);">Top 20 Harvesters from live state</span>
-            <button id="refreshLbBtn" style="background:#fff; border:1px solid var(--card-border); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; color:var(--leaf-dark);">🔄 Refresh</button>
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; color:var(--ink-muted);">Top 20 harvest records on this device</span>
+             <button id="refreshLbBtn" style="background:#fff; border:1px solid var(--card-border); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; color:var(--leaf-dark);">Refresh</button>
           </div>
           <table class="lb-table">
             <thead>
@@ -1498,7 +1506,7 @@
         <div id="tabTreasury" style="display:none;">
           <div class="treasury-box">
             <div class="treasury-header">
-              <span style="font-size:12px; font-weight:800; color:var(--leaf-dark);">🏛️ Rewards & Claims</span>
+               <span style="font-size:12px; font-weight:800; color:var(--leaf-dark);">Rewards & Claims</span>
               <span class="treasury-badge">Merkle Vault</span>
             </div>
 
@@ -1706,8 +1714,7 @@
    var walletBalances = { native: '--', usdc: '--' };
     var currentPlot = null;
     var privyWallet = null;
-   var bankrApp = null;
-   var liveSyncTimer = null;
+    var liveSyncTimer = null;
    var liveTimersStarted = false;
 
   // ==========================================
@@ -1722,11 +1729,13 @@
   function resetPrivySession() {
     userWallet = null;
     authType = null;
-    privyWallet = null;
-    ethersProvider = null;
-    ethersSigner = null;
-    state = null;
-    walletBalances = { native: '--', usdc: '--' };
+     privyWallet = null;
+     ethersProvider = null;
+     ethersSigner = null;
+     state = null;
+     walletBalances = { native: '--', usdc: '--' };
+     var topbar = document.getElementById('topbar');
+     if (topbar) topbar.style.display = 'none';
     var walletLabel = document.getElementById('walletLabel');
     if (walletLabel) walletLabel.textContent = 'Connect wallet';
     var syncEl = document.getElementById('lastSyncTime');
@@ -1785,22 +1794,20 @@
   }
 
   // ==========================================
-  // BANKR LIVE STATE ENGINE
-  // ==========================================
-  function getBankrApp() {
-    return window.bankr && window.bankr.scripts ? window.bankr : null;
-  }
-
+   // LOCAL FARM STATE ENGINE
+   // ==========================================
    function showSigninGate(message, canSignIn) {
      var gate = document.getElementById('signinGate');
      var workspace = document.getElementById('gameWorkspace');
+     var topbar = document.getElementById('topbar');
      var title = document.getElementById('signinTitle');
      var messageEl = document.getElementById('signinMessage');
      var action = document.getElementById('signinAction');
      var socialOptions = document.getElementById('socialLoginOptions');
      var walletStatus = document.getElementById('privyWalletStatus');
-     if (gate) gate.style.display = 'block';
+     if (gate) gate.style.display = 'grid';
      if (workspace) workspace.style.display = 'none';
+     if (topbar) topbar.style.display = 'none';
      if (title) title.textContent = 'Connect to MUSEFARM';
      if (messageEl) messageEl.textContent = message;
      if (action) {
@@ -1811,66 +1818,76 @@
      setSignInButtonsDisabled(canSignIn === false);
    }
 
-  function applyFarmResponse(result) {
-    if (!result) return;
-    if (result.seedConfig) {
-      Object.keys(result.seedConfig).forEach(function (key) {
-        SEED_CONFIG[key] = Object.assign({}, SEED_CONFIG[key] || {}, result.seedConfig[key]);
-      });
-    }
-    if (Array.isArray(result.seedRecipes)) DEFAULT_RECIPES = result.seedRecipes;
-    if (result.gridConfig) GRID_CONFIG = Object.assign({}, GRID_CONFIG, result.gridConfig);
-    if (result.maxStamina) MAX_STAMINA = result.maxStamina;
-    if (result.staminaRegenMs) STAMINA_REGEN_MS = result.staminaRegenMs;
-    if (result.dailyFreeCap) DAILY_FREE_SEED_CAP = result.dailyFreeCap;
-    if (result.state) state = result.state;
-  }
+   function farmStorageKey(address) {
+     return 'musefarm:farm:' + String(address || '').toLowerCase();
+   }
 
-  async function invokeFarmScript(name, args) {
-    var app = getBankrApp();
-    if (!app) throw new Error('Open MUSEFARM inside the Bankr app to use live farm state.');
-    if (app.auth && !app.auth.isAuthenticated) {
-      await app.auth.requireSignIn();
-    }
-    var result = await app.scripts.run(name, args || {});
-    applyFarmResponse(result);
-    if (!result || result.ok === false) {
-      throw new Error((result && result.error) || 'Bankr script failed.');
-    }
-    return result;
-  }
+   function readStoredFarm(address) {
+     try {
+       var raw = localStorage.getItem(farmStorageKey(address));
+       if (!raw) return null;
+       var saved = JSON.parse(raw);
+       if (!saved || !Array.isArray(saved.plots)) return null;
+       saved.walletAddress = address;
+       return saved;
+     } catch (err) {
+       return null;
+     }
+   }
 
-  async function loadLiveFarm(showErrors) {
-    var app = getBankrApp();
-    if (!app) return false;
-    if (app.auth && !app.auth.isAuthenticated) {
-      showSigninGate('Sign in through Bankr to load your synchronized farm.', true);
-      return false;
-    }
-    try {
-      var result = await invokeFarmScript('getFarm');
-      userWallet = (result.state && result.state.walletAddress) || (app.wallet && (app.wallet.evmAddress || app.wallet.address)) || (app.ctx && app.ctx.walletAddress);
-      authType = 'bankr';
-      document.getElementById('signinGate').style.display = 'none';
-      document.getElementById('gameWorkspace').style.display = 'grid';
-      renderAll();
-      var syncEl = document.getElementById('lastSyncTime');
-      if (syncEl) syncEl.textContent = 'SYNCED ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return true;
-    } catch (err) {
-      if (showErrors !== false) showSigninGate(err.message || 'Unable to load the live farm.', true);
-      return false;
-    }
-  }
+   function persistState() {
+     if (!state || !userWallet) return;
+     state.updatedAt = Date.now();
+     try {
+       localStorage.setItem(farmStorageKey(userWallet), JSON.stringify(state));
+       var raw = localStorage.getItem('musefarm:leaderboard');
+       var entries = raw ? JSON.parse(raw) : [];
+       entries = Array.isArray(entries) ? entries.filter(function (row) {
+         return String(row.walletAddress || '').toLowerCase() !== userWallet.toLowerCase();
+       }) : [];
+       entries.push({ walletAddress: userWallet, level: state.level, totalHarvested: state.totalHarvested });
+       entries.sort(function (a, b) { return Number(b.totalHarvested || 0) - Number(a.totalHarvested || 0); });
+       localStorage.setItem('musefarm:leaderboard', JSON.stringify(entries.slice(0, 20)));
+     } catch (err) {
+       // Private browsing modes may deny localStorage; the current session still works.
+     }
+   }
 
-  function startLiveUpdates() {
-    if (liveTimersStarted) return;
-    liveTimersStarted = true;
-    liveSyncTimer = setInterval(function () {
-      loadLiveFarm(false);
-      var leaderboardTab = document.getElementById('tabLeaderboard');
-      if (leaderboardTab && leaderboardTab.style.display !== 'none') loadLeaderboard(true);
-    }, 15000);
+   function loadLiveFarm(showErrors) {
+     if (!userWallet) return false;
+     try {
+       state = recalc(readStoredFarm(userWallet) || createPrivyShellState(userWallet));
+       var gate = document.getElementById('signinGate');
+       var workspace = document.getElementById('gameWorkspace');
+       var topbar = document.getElementById('topbar');
+       if (gate) gate.style.display = 'none';
+       if (workspace) workspace.style.display = 'grid';
+       if (topbar) topbar.style.display = 'flex';
+       renderAll();
+       persistState();
+       var syncEl = document.getElementById('lastSyncTime');
+       if (syncEl) syncEl.textContent = 'LOCAL ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+       startLiveUpdates();
+       return true;
+     } catch (err) {
+       if (showErrors !== false) showSigninGate(err.message || 'Unable to load the farm.', true);
+       return false;
+     }
+   }
+
+   function startLiveUpdates() {
+     if (liveTimersStarted) return;
+     liveTimersStarted = true;
+     liveSyncTimer = setInterval(function () {
+       if (state) {
+         state = recalc(state);
+         persistState();
+         renderProfile();
+         renderPlots();
+       }
+       var leaderboardTab = document.getElementById('tabLeaderboard');
+       if (leaderboardTab && leaderboardTab.style.display !== 'none') loadLeaderboard(true);
+     }, 15000);
     setInterval(tickCountdowns, 1000);
   }
 
@@ -1945,11 +1962,11 @@
       var diff = state.staminaUpdatedAt + STAMINA_REGEN_MS - Date.now();
       document.getElementById('staminaCountdown').textContent = '+1 Stamina in ' + fmtTime(diff);
     } else {
-      document.getElementById('staminaCountdown').textContent = '⚡ Full Stamina';
+      document.getElementById('staminaCountdown').textContent = 'Full Stamina';
     }
 
     if (state.walletAddress) {
-       var badge = authType === 'privy' ? '🔐 ' : (authType === 'injected' ? '🦊 ' : '⚡ ');
+       var badge = authType === 'privy' ? 'Privy · ' : '';
       document.getElementById('walletLabel').textContent = badge + shortAddr(state.walletAddress);
       document.getElementById('userHarvestAllocation').textContent = state.totalHarvested + ' MUSE Harvested';
       var farmTokens = (state.totalHarvested || 0) * 2;
@@ -2031,17 +2048,17 @@
           btnHtml = '<button class="buy-btn" disabled>Daily Limit (10/10)</button>';
         }
       } else {
-        btnHtml = '<button class="buy-btn x402-btn" data-seed="' + key + '" data-cost="' + cfg.costUsd + '">Buy ($' + cfg.costUsd + ')</button>';
+       btnHtml = '<button class="buy-btn privy-pay-btn" data-seed="' + key + '" data-cost="' + cfg.costUsd + '">Buy ($' + cfg.costUsd + ')</button>';
       }
 
-      var reusableBadge = !cfg.free ? '<span style="color:#2b6cb0; font-weight:700;">♻️ Reusable</span>' : '';
+       var reusableBadge = !cfg.free ? '<span style="color:#2b6cb0; font-weight:700;">Reusable</span>' : '';
       card.innerHTML =
         '<div class="seed-emoji">' + cfg.emoji + '</div>' +
         '<div class="seed-details">' +
           '<div class="seed-name-row"><span class="seed-name">' + cfg.name + '</span>' + priceHtml + '</div>' +
           '<div class="seed-meta">' +
-            '<span>⏳ ' + fmtGrowDuration(cfg.growMs) + '</span>' +
-            '<span>🌾 +' + cfg.yield + ' MUSE</span>' +
+             '<span>Time ' + fmtGrowDuration(cfg.growMs) + '</span>' +
+             '<span>Yield +' + cfg.yield + ' MUSE</span>' +
             '<span class="seed-owned">Seeds: ' + owned + '</span>' +
             reusableBadge +
           '</div>' +
@@ -2082,13 +2099,13 @@
         cfg.emoji + ' ' + count + ' ' + cfg.name + '</span>';
     }).join(' ');
     barnBox.innerHTML =
-      '<div style="font-size:11px; font-weight:800; color:var(--gold-dark); margin-bottom:6px;">🧺 HARVESTED CROPS BARN:</div>' +
+       '<div style="font-size:11px; font-weight:800; color:var(--gold-dark); margin-bottom:6px;">HARVESTED CROPS BARN:</div>' +
       '<div style="display:flex; flex-wrap:wrap; gap:4px;">' + barnBadges + '</div>';
     list.appendChild(barnBox);
 
     recipes.forEach(function (rec) {
       var fromCfg = SEED_CONFIG[rec.from] || { name: rec.from, emoji: '🌱' };
-      var toCfg = SEED_CONFIG[rec.to] || { name: rec.name || rec.to, emoji: rec.emoji || '✨', yield: 0, costUsd: 0 };
+       var toCfg = SEED_CONFIG[rec.to] || { name: rec.name || rec.to, emoji: '', yield: 0, costUsd: 0 };
       var currentHarvested = harvestInv[rec.from] || 0;
       var canCraft1 = currentHarvested >= rec.fromQty;
       var maxCraft = Math.floor(currentHarvested / rec.fromQty);
@@ -2145,7 +2162,7 @@
         name: 'Expanded Farm (4x4 Grid)',
         plots: 16,
         costUsd: 5.00,
-        emoji: '🏡',
+         marker: 'EXPANSION',
         desc: 'Expands territory from 9 to 16 plots (+7 extra plots). Plant and harvest more crops simultaneously.'
       },
       {
@@ -2154,19 +2171,19 @@
         name: 'Estate Farm (5x5 Grid)',
         plots: 25,
         costUsd: 7.00,
-        emoji: '🏰',
+         marker: 'ESTATE',
          desc: 'The ultimate estate with 25 plots (+16 extra plots). Massive capacity and the highest reward-score capacity.'
       }
     ];
 
     mount.innerHTML = upgrades.map(function (u) {
       var isUnlocked = currentSize >= u.size;
-      var btnText = isUnlocked ? '✅ Unlocked' : 'Expand Land ($' + u.costUsd + ' USDC)';
+       var btnText = isUnlocked ? 'Unlocked' : 'Expand Land ($' + u.costUsd + ' USDC)';
       var disabled = isUnlocked ? 'disabled' : '';
 
       return '<div class="upgrade-card">' +
         '<div class="upgrade-header">' +
-          '<span class="upgrade-title">' + u.emoji + ' ' + u.name + '</span>' +
+           '<span class="upgrade-title"><small style="color:var(--gold-dark); letter-spacing:1px;">' + u.marker + '</small> ' + u.name + '</span>' +
           '<span class="upgrade-price">$' + u.costUsd + ' USDC</span>' +
         '</div>' +
         '<div class="upgrade-desc">' + u.desc + '</div>' +
@@ -2201,14 +2218,6 @@
       if (usdcEl) usdcEl.textContent = 'Loading...';
 
       try {
-        var app = getBankrApp();
-        if (app) {
-          var liveBalances = await invokeFarmScript('getWalletBalances');
-          walletBalances.native = liveBalances.nativeEth || '--';
-          walletBalances.usdc = liveBalances.usdc || '--';
-          renderWallet();
-          return;
-        }
         if (!baseReadProvider) baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
         var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, baseReadProvider);
        var results = await Promise.all([
@@ -2274,22 +2283,8 @@
       if (btn) btn.disabled = true;
       showBanner('Preparing ' + asset + ' withdrawal on Base...', 'info');
 
-      try {
-        var app = getBankrApp();
-        if (app) {
-          var prepared = await invokeFarmScript('prepareWithdrawal', {
-            asset: asset,
-            amount: amount,
-            destination: destination
-          });
-          await app.confirmTransaction(prepared.tx);
-          if (amountEl) amountEl.value = '';
-          if (destinationEl) destinationEl.value = '';
-          showBanner('Withdrawal submitted for confirmation on Base.', 'info');
-          refreshWalletBalance();
-          return;
-        }
-        var signer;
+       try {
+         var signer;
         if (authType === 'privy' || authType === 'injected') {
           await switchToBaseNetwork();
           signer = ethersSigner;
@@ -2383,75 +2378,83 @@
     });
   }
 
-  async function plantSeedFlow(plotIdx, seedType) {
-    var btnMessage = 'Planting on plot #' + (plotIdx + 1) + '...';
-    showBanner(btnMessage, 'info');
-    try {
-      await invokeFarmScript('plantSeed', { plotIndex: plotIdx, seedType: seedType });
-      renderAll();
-      var name = (SEED_CONFIG[seedType] && SEED_CONFIG[seedType].name) || seedType;
-      showBanner('Planted ' + name + ' on plot #' + (plotIdx + 1) + '. Live farm state saved.', 'info');
-    } catch (err) {
-      showBanner('Planting failed: ' + (err.message || err), 'error');
-      loadLiveFarm(false);
+  function plantSeedFlow(plotIdx, seedType) {
+    state = recalc(state);
+    var plot = state && state.plots[plotIdx];
+    var cfg = SEED_CONFIG[seedType];
+    if (!plot || plot.state !== 'empty' || !cfg || (state.seedInventory[seedType] || 0) < 1 || state.stamina < 1) {
+      showBanner('This plot cannot be planted with the selected seed.', 'error');
+      return;
     }
+    state.seedInventory[seedType] -= 1;
+    state.stamina -= 1;
+    state.staminaUpdatedAt = Date.now();
+    plot.state = 'growing';
+    plot.seedType = seedType;
+    plot.plantedAt = Date.now();
+    persistState();
+    renderAll();
+    showBanner('Planted ' + cfg.name + ' on plot #' + (plotIdx + 1) + '.', 'info');
   }
 
-  async function harvestPlotFlow(plotIdx) {
+  function harvestPlotFlow(plotIdx) {
+    state = recalc(state);
     var p = state && state.plots[plotIdx];
     if (!p || p.state !== 'ready') return;
     var cfg = SEED_CONFIG[p.seedType] || {};
-    try {
-      var result = await invokeFarmScript('harvestPlot', { plotIndex: plotIdx });
-      renderAll();
-      var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
-      if (targetPlotEl) spawnFloatText(targetPlotEl, '+' + (result.harvested || cfg.yield || 0) + ' MUSE');
-      showBanner('🌾 Harvest confirmed and saved to the live farm.', 'info');
-      loadLeaderboard(true);
-    } catch (err) {
-      showBanner('Harvest failed: ' + (err.message || err), 'error');
-      loadLiveFarm(false);
-    }
+    var result = cfg.yield || 0;
+    state.muse += result;
+    state.totalHarvested += result;
+    state.harvestInventory[p.seedType] = (state.harvestInventory[p.seedType] || 0) + 1;
+    state.level = Math.max(1, Math.floor(state.totalHarvested / 100) + 1);
+    p.state = 'empty';
+    p.seedType = '';
+    p.plantedAt = 0;
+    persistState();
+    renderAll();
+    var targetPlotEl = document.querySelectorAll('.plot')[plotIdx];
+    if (targetPlotEl) spawnFloatText(targetPlotEl, '+' + result + ' MUSE');
+    showBanner('Harvest confirmed and saved to this wallet.', 'info');
+    loadLeaderboard(true);
   }
 
-  async function claimFreeWheatFlow() {
-    try {
-      var result = await invokeFarmScript('claimFreeWheat', { qty: 1 });
-      renderAll();
-      showBanner('Claim successful! +' + (result.added || 1) + ' Wheat Seed. Live farm state saved.', 'info');
-    } catch (err) {
-      showBanner('Claim failed: ' + (err.message || err), 'error');
-      loadLiveFarm(false);
+  function claimFreeWheatFlow() {
+    state = recalc(state);
+    if (!state || state.freeSeedClaimedToday >= DAILY_FREE_SEED_CAP) {
+      showBanner('Daily Wheat limit reached.', 'error');
+      return;
     }
+    state.seedInventory.wheat = (state.seedInventory.wheat || 0) + 1;
+    state.freeSeedClaimedToday += 1;
+    persistState();
+    renderAll();
+    showBanner('Claim successful! +1 Wheat Seed.', 'info');
   }
 
-  async function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
-    try {
-      var result = await invokeFarmScript('upgradeSeed', { fromSeed: fromSeed, multiplier: mult });
-      renderAll();
-      if (triggerBtn) spawnFloatText(triggerBtn, '✨ +' + (result.craftedQty || 0) + ' ' + (result.craftedEmoji || 'seed'));
-      showBanner('🎉 Seed upgrade confirmed and saved to the live farm.', 'info');
-    } catch (err) {
-      showBanner('Seed upgrade failed: ' + (err.message || err), 'error');
-      loadLiveFarm(false);
+  function upgradeSeedFlow(fromSeed, mult, triggerBtn) {
+    var rec = DEFAULT_RECIPES.find(function (item) { return item.from === fromSeed; });
+    state = recalc(state);
+    var available = state && (state.harvestInventory[fromSeed] || 0);
+    if (!rec || available < rec.fromQty * mult) {
+      showBanner('Not enough harvested crops for this upgrade.', 'error');
+      return;
     }
+    state.harvestInventory[fromSeed] -= rec.fromQty * mult;
+    state.seedInventory[rec.to] = (state.seedInventory[rec.to] || 0) + rec.toQty * mult;
+    persistState();
+    renderAll();
+    if (triggerBtn) spawnFloatText(triggerBtn, '+' + (rec.toQty * mult) + ' seed');
+    showBanner('Seed upgrade confirmed and saved.', 'info');
   }
 
-  async function payThroughBankr(endpoint, costUsd, payload) {
-    var app = getBankrApp();
-    if (!app || !app.x402 || typeof app.x402.fetch !== 'function') {
-      throw new Error('Paid actions must be opened inside the Bankr app.');
-    }
-    var response = await app.x402.fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(payload || {}),
-      headers: { 'content-type': 'application/json' },
-      maxPaymentUsd: costUsd
-    });
-    if (!response || !response.ok) {
-      throw new Error('The payment endpoint did not confirm the purchase.');
-    }
-    return response;
+  async function payWithPrivy(costUsd) {
+    await switchToBaseNetwork();
+    if (!ethersSigner) throw new Error('Privy wallet signer is not available.');
+    var usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, ethersSigner);
+    var tx = await usdc.transfer(CREATOR_WALLET, ethers.parseUnits(String(costUsd), 6));
+    showBanner('Payment submitted. Waiting for confirmation...', 'info');
+    await tx.wait();
+    return tx;
   }
 
   async function buySeedOnChain(seedType, costUsd, btnEl) {
@@ -2462,10 +2465,11 @@
     showBanner('Initiating purchase for ' + cfg.name + ' ($' + costUsd + ' USDC)...', 'info');
 
     try {
-      if (!cfg.endpoint) throw new Error('This seed has no configured payment endpoint.');
-      await payThroughBankr(cfg.endpoint, costUsd, { seedType: seedType, qty: 1 });
-      await loadLiveFarm(false);
-      showBanner('🎉 Payment confirmed! +1 ' + cfg.name + ' Seed added to the live inventory.', 'info');
+      await payWithPrivy(costUsd);
+      state.seedInventory[seedType] = (state.seedInventory[seedType] || 0) + 1;
+      persistState();
+      renderAll();
+      showBanner('Payment confirmed. +1 ' + cfg.name + ' Seed added.', 'info');
     } catch (err) {
       showBanner('Purchase cancelled or failed: ' + (err.message || err), 'error');
     } finally {
@@ -2478,11 +2482,15 @@
     showBanner('Initiating land expansion ($' + costUsd + ' USDC)...', 'info');
 
     try {
-      var grid = GRID_CONFIG[key] || {};
-      var endpoint = grid.endpoint || ('https://x402.bankr.bot/' + CREATOR_WALLET + '/musefarm-grid-' + targetSize + 'x' + targetSize);
-      await payThroughBankr(endpoint, costUsd, { gridSize: targetSize });
-      await loadLiveFarm(false);
-      showBanner('🎉 Land expansion payment confirmed. The live farm is syncing.', 'info');
+      await payWithPrivy(costUsd);
+      state.gridSize = targetSize;
+      var targetPlots = (GRID_CONFIG[key] && GRID_CONFIG[key].plots) || targetSize * targetSize;
+      while (state.plots.length < targetPlots) {
+        state.plots.push({ index: state.plots.length, state: 'empty', seedType: '', plantedAt: 0 });
+      }
+      persistState();
+      renderAll();
+      showBanner('Land expansion confirmed. Your farm is now ' + targetSize + 'x' + targetSize + '.', 'info');
     } catch (err) {
       showBanner('Upgrade cancelled or failed: ' + (err.message || err), 'error');
     } finally {
@@ -2516,26 +2524,21 @@
   // ==========================================
   // LEADERBOARD
   // ==========================================
-  async function loadLeaderboard(force) {
-    var tbody = document.getElementById('lbTableBody');
-    if (!tbody) return;
-    var app = getBankrApp();
-    if (!app) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Open MUSEFARM inside Bankr for live standings.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Syncing live standings...</td></tr>';
-    try {
-      var result = await invokeFarmScript('getLeaderboard', { force: !!force });
-      var entries = Array.isArray(result.entries) ? result.entries : [];
-      if (!entries.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">No synchronized harvesters yet.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = entries.map(function (row, idx) {
-      var isMe = state && state.walletAddress && (row.walletAddress.toLowerCase() === state.walletAddress.toLowerCase());
-      var highlight = isMe ? ' style="background:#f0fff4; font-weight:700;"' : '';
-      var medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1);
+   async function loadLeaderboard(force) {
+     var tbody = document.getElementById('lbTableBody');
+     if (!tbody) return;
+     try {
+       var raw = localStorage.getItem('musefarm:leaderboard');
+       var entries = raw ? JSON.parse(raw) : [];
+       entries = Array.isArray(entries) ? entries : [];
+       if (!entries.length) {
+         tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-muted); text-align:center;">Your harvest record will appear here.</td></tr>';
+         return;
+       }
+       tbody.innerHTML = entries.map(function (row, idx) {
+       var isMe = state && state.walletAddress && (String(row.walletAddress).toLowerCase() === state.walletAddress.toLowerCase());
+       var highlight = isMe ? ' style="background:#f0fff4; font-weight:700;"' : '';
+       var medal = idx + 1;
       return '<tr' + highlight + '>' +
         '<td>' + medal + '</td>' +
         '<td>' + shortAddr(row.walletAddress) + (isMe ? ' (You)' : '') + '</td>' +
@@ -2654,11 +2657,11 @@
             userWallet +
           '</div>' +
           '<div style="display:flex; gap:6px; margin-bottom:14px;">' +
-            '<button class="buy-btn" id="copyWalletBtn" style="flex:1;">📋 Copy Address</button>' +
+             '<button class="buy-btn" id="copyWalletBtn" style="flex:1;">Copy Address</button>' +
             '<a href="https://basescan.org/address/' + userWallet + '" target="_blank" style="padding:6px 12px; background:#edf2f7; border-radius:8px; font-size:11px; font-weight:800; color:#4a5568; text-decoration:none; display:flex; align-items:center;">BaseScan ↗</a>' +
           '</div>' +
            (authType === 'privy' ?
-             '<div style="background:#eef8ee; border:1px solid #b8d4b4; border-radius:8px; padding:10px; margin-bottom:12px; font-size:10px; color:#276341;">🔐 This embedded wallet is managed by your Privy account.</div>' : '') +
+              '<div style="background:#eef8ee; border:1px solid #b8d4b4; border-radius:8px; padding:10px; margin-bottom:12px; font-size:10px; color:#276341;">This embedded wallet is managed by your Privy account.</div>' : '') +
            '<button class="upgrade-btn" id="disconnectWalletBtn" style="background:#fed7d7; color:#9b2c2c; box-shadow:none; margin-bottom:6px;">Disconnect Wallet</button>' +
           '<button class="modal-close" id="closeWalletDetailsBtn">Close</button>' +
         '</div>' +
@@ -2666,7 +2669,7 @@
 
     document.getElementById('copyWalletBtn').addEventListener('click', function () {
       navigator.clipboard.writeText(userWallet);
-      this.textContent = '✅ Copied!';
+       this.textContent = 'Copied!';
     });
 
        document.getElementById('disconnectWalletBtn').addEventListener('click', function () {
@@ -2721,9 +2724,11 @@
      privyWallet = detail.wallet;
      userWallet = address;
      authType = 'privy';
-      if (!state || state.walletAddress !== address) state = createPrivyShellState(address);
-      if (gate) gate.style.display = 'none';
-      if (workspace) workspace.style.display = 'grid';
+       state = readStoredFarm(address) || createPrivyShellState(address);
+       if (gate) gate.style.display = 'none';
+       if (workspace) workspace.style.display = 'grid';
+       var topbar = document.getElementById('topbar');
+       if (topbar) topbar.style.display = 'flex';
      if (title) title.textContent = 'Privy Wallet Ready';
      if (message) message.textContent = 'Your X/Google account now has an embedded wallet connected to Base.';
      if (options) options.style.display = 'none';
@@ -2731,11 +2736,11 @@
      if (status) status.style.display = 'block';
       if (addressEl) addressEl.textContent = address;
       if (explorer) explorer.href = 'https://basescan.org/address/' + address;
-      document.getElementById('walletLabel').textContent = '🔐 ' + shortAddr(address);
+       document.getElementById('walletLabel').textContent = 'Privy · ' + shortAddr(address);
       var syncEl = document.getElementById('lastSyncTime');
       if (syncEl) syncEl.textContent = 'PRIVY WALLET READY';
-      renderAll();
-      refreshWalletBalance();
+       loadLiveFarm(false);
+       refreshWalletBalance();
    }
 
     function handlePrivyState(event) {

@@ -1285,8 +1285,21 @@
   <div id="privyRoot" hidden></div>
 </div>
 
-<script type="module">
+ <script type="module">
   (async function () {
+    function normalizePrivyError(error) {
+      return {
+        message: error && error.message ? error.message : String(error || 'Privy failed to initialize.'),
+        code: error && error.code ? error.code : ''
+      };
+    }
+
+    function reportPrivyError(error) {
+      var normalized = normalizePrivyError(error);
+      window.__musefarmPrivyError = normalized;
+      window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: normalized } }));
+    }
+
     try {
       var ReactModule = await import('https://esm.sh/react@19.2.3');
       var ReactDOM = await import('https://esm.sh/react-dom@19.2.3/client');
@@ -1307,7 +1320,7 @@
         var createdWallet = React.useRef(null);
         var oauth = Privy.useLoginWithOAuth({
           onError: function (error) {
-            window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
+            reportPrivyError(error);
           }
         });
 
@@ -1336,11 +1349,14 @@
             return;
           }
           if (!privy.authenticated) {
+            createInProgress.current = false;
+            createdWallet.current = null;
             publishState({ ready: true, authenticated: false });
             return;
           }
           var embedded = (walletState.wallets || []).find(function (wallet) {
-            return wallet.walletClientType === 'privy' || wallet.walletClientType === 'privy embedded wallet';
+            var clientType = String(wallet.walletClientType || '').toLowerCase();
+            return clientType === 'privy' || clientType.indexOf('privy') !== -1;
           });
           var wallet = embedded || createdWallet.current;
           if (!wallet && walletState.ready && !createInProgress.current) {
@@ -1349,10 +1365,11 @@
                var wallet = created && created.wallet ? created.wallet : created;
                createdWallet.current = wallet;
                publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet });
-            }).catch(function (error) {
-              window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
-            }).finally(function () {
-              createInProgress.current = false;
+             }).catch(function (error) {
+               createdWallet.current = null;
+               reportPrivyError(error);
+             }).finally(function () {
+               createInProgress.current = false;
             });
             return;
           }
@@ -1369,13 +1386,13 @@
           appId: APP_ID,
           config: {
             loginMethods: ['google', 'twitter'],
-            embeddedWallets: { ethereum: { createOnLogin: 'off' } }
+             embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } }
           }
         },
         React.createElement(PrivyBridge)
       ));
     } catch (error) {
-      window.dispatchEvent(new CustomEvent('musefarm:privy-error', { detail: { error: error } }));
+      reportPrivyError(error);
     }
   })();
 </script>
@@ -1443,6 +1460,23 @@
   // ==========================================
   // HELPERS
   // ==========================================
+  function setSignInButtonsDisabled(disabled) {
+    [document.getElementById('signinX'), document.getElementById('signinGoogle')]
+      .filter(Boolean)
+      .forEach(function (button) { button.disabled = disabled; });
+  }
+
+  function resetPrivySession() {
+    userWallet = null;
+    authType = null;
+    privyWallet = null;
+    ethersProvider = null;
+    ethersSigner = null;
+    state = null;
+    walletBalances = { native: '--', usdc: '--' };
+    renderWallet();
+  }
+
   function shortAddr(a) {
     if (!a) return '';
     return a.slice(0, 6) + '…' + a.slice(-4);
@@ -1500,22 +1534,25 @@
     return window.bankr && window.bankr.scripts ? window.bankr : null;
   }
 
-  function showSigninGate(message, canSignIn) {
-    var gate = document.getElementById('signinGate');
-    var workspace = document.getElementById('gameWorkspace');
-    var messageEl = document.getElementById('signinMessage');
-    var action = document.getElementById('signinAction');
-    var socialOptions = document.getElementById('socialLoginOptions');
-    var walletStatus = document.getElementById('privyWalletStatus');
-    if (gate) gate.style.display = 'block';
-    if (workspace) workspace.style.display = 'none';
-    if (messageEl) messageEl.textContent = message;
-    if (action) {
-      action.style.display = 'none';
-    }
-    if (socialOptions) socialOptions.style.display = 'grid';
-    if (walletStatus) walletStatus.style.display = 'none';
-  }
+   function showSigninGate(message, canSignIn) {
+     var gate = document.getElementById('signinGate');
+     var workspace = document.getElementById('gameWorkspace');
+     var title = document.getElementById('signinTitle');
+     var messageEl = document.getElementById('signinMessage');
+     var action = document.getElementById('signinAction');
+     var socialOptions = document.getElementById('socialLoginOptions');
+     var walletStatus = document.getElementById('privyWalletStatus');
+     if (gate) gate.style.display = 'block';
+     if (workspace) workspace.style.display = 'none';
+     if (title) title.textContent = 'Connect to MUSEFARM';
+     if (messageEl) messageEl.textContent = message;
+     if (action) {
+       action.style.display = 'none';
+     }
+     if (socialOptions) socialOptions.style.display = 'grid';
+     if (walletStatus) walletStatus.style.display = 'none';
+     setSignInButtonsDisabled(canSignIn === false);
+   }
 
   function applyFarmResponse(result) {
     if (!result) return;
@@ -2419,11 +2456,11 @@
      var status = document.getElementById('privyWalletStatus');
      var addressEl = document.getElementById('privyWalletAddress');
      var explorer = document.getElementById('privyWalletExplorer');
-     var address = detail && detail.wallet && detail.wallet.address;
-     if (!address) {
-       showSigninGate('Privy signed you in, but the embedded wallet is still being created.', true);
-       return;
-     }
+      var address = detail && detail.wallet && detail.wallet.address;
+      if (!address) {
+        showSigninGate('Privy signed you in, but the embedded wallet is still being created.', false);
+        return;
+      }
      privyWallet = detail.wallet;
      userWallet = address;
      authType = 'privy';
@@ -2444,19 +2481,25 @@
       refreshWalletBalance();
    }
 
-   function handlePrivyState(event) {
-     var detail = event && event.detail ? event.detail : event;
-     if (!detail || !detail.ready || !detail.authenticated) {
-       showSigninGate(detail && !detail.ready ? 'Loading Privy securely...' : 'Choose X or Google to create your Privy wallet.', true);
-       return;
-     }
-     showPrivyWallet(detail);
-   }
+    function handlePrivyState(event) {
+      var detail = event && event.detail ? event.detail : event;
+      if (!detail || !detail.ready) {
+        showSigninGate('Loading Privy securely...', false);
+        return;
+      }
+      if (!detail.authenticated) {
+        resetPrivySession();
+        showSigninGate('Choose X or Google to create your Privy wallet.', true);
+        return;
+      }
+      showPrivyWallet(detail);
+    }
 
-   function startPrivySignIn(provider) {
-     var providerKey = provider === 'X' ? 'twitter' : 'google';
-     var buttons = [document.getElementById('signinX'), document.getElementById('signinGoogle')].filter(Boolean);
-     buttons.forEach(function (button) { button.disabled = true; });
+    function startPrivySignIn(provider) {
+      var providerName = String(provider || '').toLowerCase();
+      var providerKey = providerName === 'x' ? 'twitter' : 'google';
+      var buttons = [document.getElementById('signinX'), document.getElementById('signinGoogle')].filter(Boolean);
+      buttons.forEach(function (button) { button.disabled = true; });
      var message = document.getElementById('signinMessage');
      if (message) message.textContent = 'Opening Privy ' + provider + ' sign-in...';
      var bridge = window.__musefarmPrivyBridge;
@@ -2474,11 +2517,12 @@
      }
    }
 
-   function handlePrivyError(event) {
-     var error = event && event.detail && event.detail.error;
-     var message = error && error.message ? error.message : String(error || 'Privy failed to initialize.');
-     showSigninGate('Privy could not finish login: ' + message, true);
-   }
+    function handlePrivyError(event) {
+      var error = event && event.detail && event.detail.error;
+      var message = error && error.message ? error.message : String(error || 'Privy failed to initialize.');
+      setSignInButtonsDisabled(false);
+      showSigninGate('Privy could not finish login: ' + message, true);
+    }
 
    async function boot() {
      setupTabs();
@@ -2487,13 +2531,14 @@
      var signinX = document.getElementById('signinX');
      var signinGoogle = document.getElementById('signinGoogle');
      if (signinX) signinX.addEventListener('click', function () { startPrivySignIn('X'); });
-     if (signinGoogle) signinGoogle.addEventListener('click', function () { startPrivySignIn('Google'); });
+      if (signinGoogle) signinGoogle.addEventListener('click', function () { startPrivySignIn('Google'); });
      var logoutBtn = document.getElementById('privyLogoutBtn');
      if (logoutBtn) logoutBtn.addEventListener('click', function () {
        if (window.__musefarmPrivyBridge && window.__musefarmPrivyBridge.logout) window.__musefarmPrivyBridge.logout();
      });
-     if (window.__musefarmPrivyState) handlePrivyState({ detail: window.__musefarmPrivyState });
-     else showSigninGate('Loading Privy securely...', true);
+      if (window.__musefarmPrivyError) handlePrivyError({ detail: { error: window.__musefarmPrivyError } });
+      else if (window.__musefarmPrivyState) handlePrivyState({ detail: window.__musefarmPrivyState });
+      else showSigninGate('Loading Privy securely...', false);
    }
 
   window.addEventListener('DOMContentLoaded', boot);

@@ -1287,9 +1287,7 @@
     <!-- Sign In Gate -->
       <div class="card signin-panel" id="signinGate" style="display:none;">
       <div class="signin-showcase">
-        <video class="signin-hero-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
-          <source src="assets/musefarm-hero.mp4" type="video/mp4" />
-        </video>
+        <video class="signin-hero-video" id="loginHeroVideo" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
         <div class="signin-showcase-video-overlay" aria-hidden="true"></div>
         <div class="signin-showcase-head">
           <span class="signin-eyebrow">FIELD OPERATIONS / 001</span>
@@ -2683,6 +2681,27 @@
     });
   }
 
+   function loadHeroVideo() {
+     var video = document.getElementById('loginHeroVideo');
+     if (!video) return;
+     var parts = [
+       'assets/musefarm-hero.part1',
+       'assets/musefarm-hero.part2',
+       'assets/musefarm-hero.part3'
+     ];
+     Promise.all(parts.map(function (path) {
+       return fetch(path).then(function (response) {
+         if (!response.ok) throw new Error('Hero video segment unavailable.');
+         return response.arrayBuffer();
+       });
+     })).then(function (buffers) {
+       video.src = URL.createObjectURL(new Blob(buffers, { type: 'video/mp4' }));
+       video.play().catch(function () {});
+     }).catch(function () {
+       video.style.display = 'none';
+     });
+   }
+
     function createPrivyShellState(address) {
       var now = Date.now();
       var today = new Date(now).toISOString().slice(0, 10);
@@ -2786,8 +2805,9 @@
       showSigninGate('Privy could not finish login: ' + message, true);
     }
 
-   async function boot() {
-     setupTabs();
+    async function boot() {
+      setupTabs();
+      loadHeroVideo();
      window.addEventListener('musefarm:privy-state', handlePrivyState);
      window.addEventListener('musefarm:privy-error', handlePrivyError);
      var signinX = document.getElementById('signinX');

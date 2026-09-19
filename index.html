@@ -1013,6 +1013,236 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
   }
 
+  /* ==========================================================================
+     MUSEFARM PREMIUM FIELD SYSTEM
+     ========================================================================== */
+  :root {
+    --premium-ink: #edf4e9;
+    --premium-muted: #8ea997;
+    --premium-soft: #bed2bd;
+    --premium-deep: #07130e;
+    --premium-panel: rgba(15, 34, 25, 0.86);
+    --premium-panel-strong: rgba(10, 25, 18, 0.96);
+    --premium-line: rgba(193, 224, 175, 0.15);
+    --premium-line-strong: rgba(214, 232, 193, 0.28);
+    --premium-moss: #8dbd79;
+    --premium-gold: #e6bf6d;
+    --premium-gold-bright: #f5d998;
+    --premium-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+    --ink: var(--premium-ink);
+    --ink-muted: var(--premium-muted);
+    --leaf-dark: #c3dda6;
+    --leaf: #84b979;
+    --leaf-bright: #a9d38f;
+    --gold-dark: var(--premium-gold);
+    --gold: #dcb86a;
+    --gold-bright: var(--premium-gold-bright);
+    --card-border: var(--premium-line);
+    --card-bg: var(--premium-panel);
+  }
+
+  html, body { background: var(--premium-deep); color: var(--premium-ink); }
+  body {
+    background:
+      radial-gradient(circle at 82% -5%, rgba(141, 189, 121, 0.16), transparent 28rem),
+      radial-gradient(circle at 8% 40%, rgba(230, 191, 109, 0.08), transparent 24rem),
+      linear-gradient(135deg, #06120d 0%, #0a1f15 50%, #102b1e 100%);
+    letter-spacing: -0.01em;
+  }
+  body::before { opacity: 0.14; background-image: radial-gradient(rgba(231, 244, 219, 0.16) 0.7px, transparent 0.7px); }
+  #app { max-width: 1480px; padding: 24px 28px 42px; gap: 18px; }
+  .ambient-field { opacity: 0.64; }
+  .sun-orb { opacity: 0.42; filter: blur(3px); }
+  .cloud { opacity: 0.36; }
+  .firefly { background: #e5c97b; box-shadow: 0 0 16px 5px rgba(229, 201, 123, 0.6); }
+
+  .topbar, .card {
+    background: linear-gradient(145deg, rgba(22, 48, 34, 0.94), rgba(10, 28, 20, 0.9)) !important;
+    border: 1px solid var(--premium-line) !important;
+    box-shadow: var(--premium-shadow), inset 0 1px 0 rgba(236, 249, 223, 0.07) !important;
+    color: var(--premium-ink);
+  }
+  .topbar {
+    min-height: 80px;
+    padding: 14px 18px;
+    border-radius: 20px;
+    backdrop-filter: blur(22px);
+  }
+  .topbar::after { background: rgba(141, 189, 121, 0.08); }
+  .brand .logo { filter: drop-shadow(0 8px 15px rgba(214, 170, 72, 0.28)); }
+  .brand h1 {
+    color: #f0f3dd;
+    background: linear-gradient(135deg, #f5f1d8 0%, #b7d49f 58%, #e3b964 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .brand-meta { gap: 5px; }
+  .badge-rh, .badge-rail { border: 1px solid rgba(255,255,255,0.12); letter-spacing: 0.75px; }
+  .badge-rh { background: rgba(129, 186, 103, 0.2); color: #d2edb7; box-shadow: none; }
+  .badge-rail { background: rgba(116, 155, 214, 0.2); color: #c9dcff; box-shadow: none; }
+  .stats { gap: 8px; }
+  .stat-chip, .wallet-chip {
+    background: rgba(4, 17, 11, 0.34) !important;
+    border: 1px solid var(--premium-line) !important;
+    color: var(--premium-muted);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 20px rgba(0,0,0,0.12);
+  }
+  .stat-chip { padding: 8px 12px; }
+  .stat-chip .val { color: var(--premium-gold-bright); }
+  .wallet-chip { color: #d1e5c9; background: rgba(110, 162, 96, 0.12) !important; }
+  .wallet-chip:hover { border-color: rgba(230,191,109,0.55) !important; background: rgba(110, 162, 96, 0.2) !important; }
+
+  .layout { grid-template-columns: 264px minmax(0, 1fr) 398px; gap: 18px; }
+  .card { border-radius: 20px; }
+  .card-title { color: #d5e4bf; font-size: 12px; letter-spacing: 1.5px; }
+  .farmer-card { background: linear-gradient(170deg, rgba(17, 43, 29, 0.98), rgba(8, 24, 16, 0.96)) !important; }
+  .farmer-avatar-frame { border: 1px solid rgba(221, 202, 148, 0.45); box-shadow: 0 18px 36px rgba(0,0,0,0.28), 0 0 0 7px rgba(141,189,121,0.07); }
+  .farmer-title { color: #ecf1d7; }
+  .farmer-rank, .seed-owned, .recipe-owned-tag .highlight { color: var(--premium-gold) !important; }
+  .bar-header { color: var(--premium-muted); }
+  .progress-track { background: rgba(188, 214, 170, 0.12); border-color: rgba(188, 214, 170, 0.13); }
+  .progress-fill { background: linear-gradient(90deg, #a6d68d, #578d62); box-shadow: 0 0 14px rgba(141, 189, 121, 0.36); }
+  .progress-fill.gold { background: linear-gradient(90deg, #f4d38b, #b6833d); }
+  .meta-sub, .farm-subtitle-row, .seed-meta, .upgrade-desc, .wallet-help, .wallet-balance-label { color: var(--premium-muted) !important; }
+
+  .farm-container { background: linear-gradient(155deg, rgba(28, 55, 36, 0.9), rgba(10, 26, 18, 0.96)) !important; }
+  .farm-container::before { background: radial-gradient(circle at 50% 100%, rgba(141, 189, 121, 0.12), transparent 48%); }
+  .farm-hero-strip { background: linear-gradient(90deg, rgba(126, 173, 104, 0.14), rgba(230, 191, 109, 0.1)); border-color: rgba(168, 202, 139, 0.16); color: #dce9c9; }
+  .farm-hero-copy { color: var(--premium-gold) !important; }
+  .grid-container { background: linear-gradient(145deg, #2b2015, #120e09 82%); border-color: rgba(230, 191, 109, 0.34); box-shadow: inset 0 0 0 5px rgba(255,223,149,0.04), inset 0 15px 32px rgba(0,0,0,0.5), 0 20px 34px rgba(0,0,0,0.3); }
+  .plot { border-color: rgba(214, 174, 110, 0.3); }
+  .plot:hover { box-shadow: 0 14px 24px rgba(0,0,0,0.36); }
+
+  .layout > .card:last-child { background: linear-gradient(160deg, rgba(19, 43, 29, 0.96), rgba(8, 23, 16, 0.98)) !important; }
+  .tab-nav { border-bottom-color: var(--premium-line); }
+  .tab-btn { color: #8daa98; }
+  .tab-btn:hover { color: #e2edcf; }
+  .tab-btn.active { color: #e3edcc; background: rgba(141, 189, 121, 0.12); }
+  .tab-btn.active::after { background: linear-gradient(90deg, #96c47b, #e6bf6d); }
+  .seed-item, .recipe-card, .upgrade-card, .treasury-box, .wallet-form, .wallet-balance {
+    background: linear-gradient(145deg, rgba(25, 54, 36, 0.82), rgba(10, 28, 19, 0.88)) !important;
+    border-color: var(--premium-line) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 28px rgba(0,0,0,0.14) !important;
+  }
+  .seed-item:hover, .recipe-card:hover, .upgrade-card:hover { border-color: rgba(230,191,109,0.5) !important; }
+  .seed-name, .upgrade-title { color: #e2ebd5 !important; }
+  .seed-price-tag.free { background: rgba(141, 189, 121, 0.18); color: #bfe4a6; }
+  .seed-price-tag.paid, .upgrade-price { background: rgba(112, 158, 212, 0.14); color: #c5dbff; border-color: rgba(139, 177, 227, 0.24); }
+  .buy-btn, .craft-btn, .upgrade-btn { border: 1px solid rgba(255,255,255,0.1); }
+  .buy-btn { background: linear-gradient(135deg, #82b86f, #4e7e59); }
+  .buy-btn.x402-btn { background: linear-gradient(135deg, #557fbd, #31558b); }
+  .craft-btn { background: linear-gradient(135deg, #e4be68, #a77432); }
+  .recipe-actions { border-top-color: var(--premium-line); }
+  .upgrade-btn { background: linear-gradient(135deg, #d8ad59, #92682c); }
+  .lb-table th { color: var(--premium-muted); border-bottom-color: var(--premium-line-strong); }
+  .lb-table td { border-bottom-color: var(--premium-line); color: #d9e6d1; }
+  .lb-table tr:first-child td { color: #f0cf82; background: rgba(230,191,109,0.08); }
+  .treasury-header span:first-child { color: #dce9c9 !important; }
+  .treasury-badge { background: rgba(230,191,109,0.14); color: #f1d18a; border-color: rgba(230,191,109,0.28); }
+  .mechanism-card { background: rgba(121, 180, 111, 0.1); border-color: rgba(141,189,121,0.2); color: #c9dec1; }
+  .wallet-network { background: rgba(109, 155, 211, 0.16); color: #c6dcff; border-color: rgba(149, 188, 235, 0.25); }
+  .wallet-address-box, .wallet-form input, .wallet-form select { background: rgba(3, 14, 9, 0.42) !important; color: #e0ead7; border-color: var(--premium-line) !important; }
+  .wallet-balance-value { color: #dceacb; }
+
+  .banner-box.info { background: rgba(126, 181, 105, 0.16); color: #cde7bd; border-color: rgba(141,189,121,0.26); }
+  .banner-box.error { background: rgba(194, 83, 76, 0.16); color: #ffb7af; border-color: rgba(234, 124, 116, 0.28); }
+  .modal-backdrop { background: rgba(2, 8, 5, 0.78); backdrop-filter: blur(12px); }
+  .modal-card, .auth-modal-card { background: linear-gradient(145deg, #173a27, #0b2116) !important; border-color: var(--premium-line-strong) !important; box-shadow: 0 28px 70px rgba(0,0,0,0.45); }
+  .modal-card h3, .auth-modal-card h3 { color: #e1edcf !important; }
+  .modal-seed-opt { background: rgba(5, 19, 12, 0.36); border-color: var(--premium-line); color: #dfead8; }
+  .modal-seed-opt:hover { background: rgba(141,189,121,0.14); border-color: rgba(230,191,109,0.5); }
+  .modal-close { background: rgba(193, 214, 181, 0.14); color: #d6e4cf; }
+  .modal-close:hover { background: rgba(193,214,181,0.24); }
+
+  /* Premium sign-in split screen. */
+  #mainContainer { width: 100%; }
+  .signin-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr);
+    max-width: 1160px;
+    min-height: 620px;
+    padding: 0;
+    margin: 20px auto 0;
+    overflow: hidden;
+    text-align: left;
+    background: linear-gradient(125deg, rgba(17, 44, 29, 0.98), rgba(8, 21, 14, 0.98)) !important;
+    border-radius: 28px;
+  }
+  #signinGate[style*="display: block"] { display: grid !important; }
+  .signin-showcase { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 620px; padding: 34px 42px 32px; overflow: hidden; background: radial-gradient(circle at 80% 12%, rgba(231, 190, 104, 0.17), transparent 17rem), linear-gradient(145deg, rgba(29, 67, 42, 0.88), rgba(10, 28, 18, 0.28)); }
+  .signin-showcase::before { content: ''; position: absolute; width: 380px; height: 380px; right: -90px; bottom: -150px; border: 1px solid rgba(230,191,109,0.16); border-radius: 50%; box-shadow: 0 0 0 28px rgba(230,191,109,0.035), 0 0 0 56px rgba(230,191,109,0.025); }
+  .signin-showcase::after { content: ''; position: absolute; inset: 0; opacity: 0.16; background-image: linear-gradient(115deg, transparent 0 49%, rgba(230,191,109,0.26) 49.2%, transparent 49.6%), linear-gradient(18deg, transparent 0 68%, rgba(141,189,121,0.18) 68.2%, transparent 68.5%); pointer-events: none; }
+  .signin-showcase > * { position: relative; z-index: 1; }
+  .signin-showcase-head, .signin-auth-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .signin-eyebrow, .signin-auth-topline, .signin-provider-label { font-size: 10px; font-weight: 900; letter-spacing: 1.6px; color: #a8c497; }
+  .signin-live { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 800; letter-spacing: 1px; color: #d7e8c9; }
+  .signin-live span { width: 6px; height: 6px; border-radius: 50%; background: #9fd279; box-shadow: 0 0 12px #9fd279; }
+  .signin-orbit { position: absolute !important; right: 14%; top: 24%; width: 184px; height: 184px; border: 1px solid rgba(230,191,109,0.27); border-radius: 50%; opacity: 0.82; }
+  .signin-orbit::before, .signin-orbit::after { content: ''; position: absolute; border: 1px solid rgba(141,189,121,0.24); border-radius: 50%; }
+  .signin-orbit::before { inset: 23px; }
+  .signin-orbit::after { inset: 50px; }
+  .signin-orbit span { position: absolute; right: 12px; top: 23px; color: #f1cc78; font-size: 16px; }
+  .signin-mark { font-size: 70px; line-height: 1; margin-top: auto; margin-bottom: 22px; filter: drop-shadow(0 18px 24px rgba(0,0,0,0.26)); }
+  .signin-showcase-copy { max-width: 530px; }
+  .signin-kicker { color: #e5bf70; font-size: 11px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; margin-bottom: 13px; }
+  .signin-showcase h2 { color: #f0f3df !important; font-size: clamp(40px, 5vw, 68px) !important; font-weight: 500 !important; line-height: 0.98; letter-spacing: -3px; margin: 0 0 18px !important; }
+  .signin-showcase h2 em { color: #d8b466; font-family: Georgia, serif; font-weight: 400; }
+  .signin-showcase-copy p { max-width: 430px; color: #a7bca5; font-size: 14px; line-height: 1.7; margin: 0 !important; }
+  .signin-showcase-footer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; padding-top: 16px; border-top: 1px solid rgba(193,224,175,0.16); }
+  .signin-showcase-footer div { display: flex; flex-direction: column; gap: 5px; }
+  .signin-showcase-footer strong { color: #e4bd6e; font-size: 11px; letter-spacing: 1px; }
+  .signin-showcase-footer span { color: #bdd0b6; font-size: 10px; }
+  .signin-auth { display: flex; flex-direction: column; justify-content: center; padding: 48px clamp(26px, 5vw, 62px); background: rgba(4, 14, 9, 0.34); }
+  .signin-auth-topline { color: #78977e; margin-bottom: 34px; }
+  .signin-auth-topline span { color: #d2b16e; font-size: 9px; letter-spacing: 1px; }
+  .signin-auth h2#signinTitle { color: #edf3e5 !important; font-size: 30px !important; letter-spacing: -1.2px; margin: 0 0 8px !important; }
+  .signin-auth > #signinMessage { color: #98b09d; font-size: 13px; line-height: 1.55; margin: 0 0 28px; }
+  .signin-provider-label { color: #78977e; margin-bottom: 10px; }
+  .social-login-grid { grid-template-columns: 1fr; gap: 10px; max-width: none; margin: 0; }
+  .social-login-btn { min-height: 58px; justify-content: flex-start; padding: 0 16px; background: rgba(24, 53, 35, 0.72) !important; color: #e6efe1; border: 1px solid rgba(193,224,175,0.18) !important; box-shadow: none; }
+  .social-login-btn:hover { background: rgba(41, 80, 48, 0.9) !important; border-color: rgba(230,191,109,0.52) !important; box-shadow: 0 10px 28px rgba(0,0,0,0.18); }
+  .social-login-btn .social-mark { width: 26px; }
+  .social-login-btn .provider-arrow { margin-left: auto; color: #9dbb8c; font-size: 16px; }
+  .signin-trust-row { display: flex; flex-wrap: wrap; gap: 8px 13px; margin: 18px 0 15px; color: #88a58d; font-size: 9px; letter-spacing: 0.2px; }
+  .signin-note { color: #809b87 !important; font-size: 10px !important; line-height: 1.55; margin: 0 !important; }
+  .signin-legal { color: #5d7b67; font-size: 9px; margin-top: 30px; }
+  .privy-status-panel { margin: 16px 0 0; padding: 15px; border: 1px solid rgba(141,189,121,0.24); border-radius: 14px; background: rgba(141,189,121,0.08); }
+  .privy-status-label { color: #9dc38c; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
+  .privy-status-address { color: #edf4e9; font-family: monospace; font-size: 11px; word-break: break-all; margin-bottom: 8px; }
+  .privy-status-balance { color: #94ae99; font-size: 10px; margin-bottom: 10px; }
+  .privy-status-balance strong { color: #e6c578; }
+  .privy-status-panel a { color: #d2b16e; font-size: 10px; font-weight: 800; }
+  .privy-status-panel .modal-close { margin-top: 12px; }
+
+  @media (max-width: 900px) and (min-width: 768px) {
+    .signin-panel { grid-template-columns: 1fr 0.82fr; }
+    .signin-showcase { padding: 28px; }
+    .signin-showcase h2 { font-size: 45px !important; }
+    .signin-auth { padding: 34px 25px; }
+  }
+  @media (max-width: 767px) {
+    #app { padding: 10px 10px 28px; }
+    .topbar { min-height: 0; padding: 14px 12px; border-radius: 18px; }
+    .brand .logo { font-size: 32px; }
+    .brand h1 { font-size: 21px; }
+    .signin-panel { display: flex; flex-direction: column; min-height: 0; margin-top: 8px; border-radius: 22px; }
+    #signinGate[style*="display: block"] { display: flex !important; }
+    .signin-showcase { min-height: 390px; padding: 23px 22px 25px; }
+    .signin-orbit { width: 134px; height: 134px; right: 7%; top: 19%; }
+    .signin-mark { font-size: 54px; margin-top: 70px; margin-bottom: 16px; }
+    .signin-showcase h2 { font-size: 39px !important; letter-spacing: -2px; }
+    .signin-showcase-copy p { font-size: 12px; line-height: 1.55; max-width: 320px; }
+    .signin-showcase-footer { gap: 8px; margin-top: 22px; }
+    .signin-showcase-footer span { font-size: 9px; }
+    .signin-auth { padding: 28px 22px 25px; }
+    .signin-auth-topline { margin-bottom: 22px; }
+    .signin-auth h2#signinTitle { font-size: 26px !important; }
+    .signin-auth > #signinMessage { margin-bottom: 22px; }
+    .signin-trust-row { gap: 6px 9px; }
+    .layout { grid-template-columns: minmax(0, 1fr) !important; gap: 12px; }
+    .card { border-radius: 18px; }
+  }
+
 </style>
   <!-- Ethers.js Web3 integration -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
@@ -1052,22 +1282,45 @@
   <div id="mainContainer">
     <!-- Sign In Gate -->
     <div class="card signin-panel" id="signinGate" style="display:none;">
-      <div style="font-size:48px;">🚜</div>
-       <h2 id="signinTitle">Connect to MUSEFARM</h2>
+      <div class="signin-showcase">
+        <div class="signin-showcase-head">
+          <span class="signin-eyebrow">FIELD OPERATIONS / 001</span>
+          <span class="signin-live"><span></span> LIVE ON BASE</span>
+        </div>
+        <div class="signin-orbit" aria-hidden="true"><span>✦</span></div>
+        <div class="signin-mark" aria-hidden="true">🌾</div>
+        <div class="signin-showcase-copy">
+          <div class="signin-kicker">A living economy for patient growers</div>
+          <h2>Grow something<br><em>worth keeping.</em></h2>
+          <p>Plant, harvest, and build your onchain field one season at a time. MUSEFARM turns consistency into compounding progress.</p>
+        </div>
+        <div class="signin-showcase-footer">
+          <div><strong>01</strong><span>Plant with intent</span></div>
+          <div><strong>02</strong><span>Harvest in rhythm</span></div>
+          <div><strong>03</strong><span>Own the upside</span></div>
+        </div>
+      </div>
+      <div class="signin-auth">
+        <div class="signin-auth-topline">WELCOME TO THE FIELD <span>PRIVY SECURED</span></div>
+        <h2 id="signinTitle">Connect to MUSEFARM</h2>
         <p id="signinMessage">Choose X or Google to create your Privy wallet.</p>
-       <div class="social-login-grid" id="socialLoginOptions">
-         <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span></button>
-         <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span></button>
-       </div>
-       <p class="signin-note">Privy handles the secure sign-in window and creates an embedded Ethereum wallet for your account.</p>
-       <div id="privyWalletStatus" style="display:none; margin:16px auto 0; max-width:520px; text-align:left; background:#fff; border:1px solid #b8d4b4; border-radius:13px; padding:12px;">
-         <div style="font-size:11px; color:#476451; font-weight:800; margin-bottom:5px;">YOUR PRIVY ONCHAIN WALLET</div>
-         <div id="privyWalletAddress" style="font-family:monospace; font-size:11px; color:#173b29; word-break:break-all; margin-bottom:8px;"></div>
-         <div style="font-size:11px; color:#476451; margin-bottom:8px;">Base balance: <strong id="privyNativeBalance">-- ETH</strong> · <strong id="privyUsdcBalance">-- USDC</strong></div>
-         <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer" style="font-size:11px; font-weight:800; color:#276341;">View on BaseScan ↗</a>
-         <button class="modal-close" id="privyLogoutBtn" type="button" style="margin-top:10px;">Sign out</button>
-       </div>
-       <button class="signin-btn" id="signinAction" style="display:none;">Continue</button>
+        <div class="signin-provider-label">Continue with</div>
+        <div class="social-login-grid" id="socialLoginOptions">
+          <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span><span class="provider-arrow">↗</span></button>
+          <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span><span class="provider-arrow">↗</span></button>
+        </div>
+        <div class="signin-trust-row"><span>⌁ Embedded wallet</span><span>◈ Base network</span><span>◌ Non-custodial</span></div>
+        <p class="signin-note">Privy handles the secure sign-in window and creates an embedded Ethereum wallet for your account.</p>
+        <div id="privyWalletStatus" class="privy-status-panel" style="display:none;">
+          <div class="privy-status-label">YOUR PRIVY ONCHAIN WALLET</div>
+          <div id="privyWalletAddress" class="privy-status-address"></div>
+          <div class="privy-status-balance">Base balance: <strong id="privyNativeBalance">-- ETH</strong> · <strong id="privyUsdcBalance">-- USDC</strong></div>
+          <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer">View on BaseScan ↗</a>
+          <button class="modal-close" id="privyLogoutBtn" type="button">Sign out</button>
+        </div>
+        <button class="signin-btn" id="signinAction" style="display:none;">Continue</button>
+        <div class="signin-legal">By continuing, you agree to the rhythm of the field.</div>
+      </div>
     </div>
 
     <!-- Game Workspace -->

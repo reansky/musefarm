@@ -278,6 +278,9 @@
     padding: 8px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     transition: transform 0.15s, border-color 0.15s; width: 100%; box-sizing: border-box;
   }
+  .paid-seed-item { flex-wrap: wrap; }
+  .paid-seed-item .seed-name { white-space: normal; }
+  .paid-seed-item .payment-controls { width: calc(100% - 44px); margin-left: 44px; }
   .seed-item:hover { border-color: var(--gold-dark); }
   .seed-emoji {
     width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
@@ -1219,6 +1222,8 @@
   .mechanism-card { background: rgba(121, 180, 111, 0.1); border-color: rgba(141,189,121,0.2); color: #c9dec1; }
   .wallet-network { background: rgba(109, 155, 211, 0.16); color: #c6dcff; border-color: rgba(149, 188, 235, 0.25); }
   .wallet-address-box, .wallet-form input, .wallet-form select { background: rgba(3, 14, 9, 0.42) !important; color: #e0ead7; border-color: var(--premium-line) !important; }
+  .payment-select { background: rgba(3, 14, 9, 0.52) !important; color: #e0ead7 !important; border-color: var(--premium-line) !important; }
+  .payment-select option { background: #0b2116; color: #e0ead7; }
   .wallet-balance-value { color: #dceacb; }
 
   .banner-box.info { background: rgba(126, 181, 105, 0.16); color: #cde7bd; border-color: rgba(141,189,121,0.26); }
@@ -2130,12 +2135,12 @@
     // Safe inventories
     if (!s.seedInventory) s.seedInventory = {};
     if (!s.harvestInventory) s.harvestInventory = {};
-    var inventoryKeys = Object.keys(s.seedInventory);
     Object.keys(SEED_CONFIG).forEach(function (k) {
       if (typeof s.seedInventory[k] !== 'number') s.seedInventory[k] = 0;
       if (typeof s.harvestInventory[k] !== 'number') s.harvestInventory[k] = 0;
     });
-    if (!inventoryKeys.length && !s.totalHarvested && s.plots.every(function (plot) { return plot.state === 'empty'; })) s.seedInventory.wheat = 3;
+    var totalSeedInventory = Object.keys(SEED_CONFIG).reduce(function (total, key) { return total + Number(s.seedInventory[key] || 0); }, 0);
+    if (!totalSeedInventory && !s.totalHarvested && s.plots.every(function (plot) { return plot.state === 'empty'; })) s.seedInventory.wheat = 3;
 
     return s;
   }
@@ -2274,7 +2279,7 @@
       var cfg = SEED_CONFIG[key];
       var owned = (state.seedInventory && state.seedInventory[key]) || 0;
       var card = document.createElement('div');
-      card.className = 'seed-item';
+       card.className = 'seed-item' + (cfg.free ? '' : ' paid-seed-item');
 
        var priceHtml = cfg.free
          ? '<span class="seed-price-tag free">FREE (' + freeRemaining + '/10 REMAINING)</span>'

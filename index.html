@@ -201,6 +201,7 @@
   .plot:hover { transform: scale(1.02); }
   .plot.empty:hover { border-color: var(--gold); background: #523826; }
   .plot.empty .plot-icon { font-size: 26px; opacity: 0.55; color: #d69e2e; line-height: 1; }
+  .plot .plot-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
   .grid-cols-4 .plot.empty .plot-icon { font-size: 20px; }
   .grid-cols-5 .plot.empty .plot-icon { font-size: 16px; }
   .plot.empty .plot-sub { font-size: 9px; color: #a0aec0; margin-top: 2px; font-weight: 700; letter-spacing: 0.5px; }
@@ -288,6 +289,16 @@
     font-size: 13px; font-weight: 950; letter-spacing: .5px; line-height: 1; flex-shrink: 0;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
   }
+  .seed-visual {
+    width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; border-radius: 14px; overflow: hidden; background: #183b27;
+    border: 1px solid rgba(230,191,109,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 7px 14px rgba(0,0,0,.16);
+  }
+  .seed-visual svg { display: block; width: 100%; height: 100%; }
+  .seed-visual.compact { width: 30px; height: 30px; border-radius: 10px; }
+  .seed-visual.plot { width: 42px; height: 42px; border-radius: 13px; background: rgba(7, 20, 11, .34); border-color: rgba(255, 224, 137, .22); }
+  .seed-loadout-art { display: block; width: 22px; height: 22px; margin: 0 auto 2px; }
+  .seed-loadout-art svg { display: block; width: 100%; height: 100%; }
   .seed-item .seed-emoji { position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 5px 12px rgba(30,75,44,.13); }
   .seed-item .seed-emoji::after { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(255,255,255,.28); border-radius: 8px; pointer-events: none; }
   .seed-details { flex: 1; min-width: 0; }
@@ -1836,16 +1847,18 @@
   // ==========================================
    var CREATOR_WALLET = '0x0b127f65d167159e4e2bf0b73c2975a14ac3d056';
    var NETWORK_CONFIG = {
-     base: {
-       key: 'base', name: 'Base', chainId: 8453, chainIdHex: '0x2105',
-       rpcUrl: 'https://mainnet.base.org', explorer: 'https://basescan.org/address/',
-       nativeSymbol: 'ETH', stableSymbol: 'USDC', stableAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', stableDecimals: 6
-     },
-     robinhood: {
-       key: 'robinhood', name: 'Robinhood Chain', chainId: 4663, chainIdHex: '0x1237',
-       rpcUrl: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com/address/',
-       nativeSymbol: 'ETH', stableSymbol: 'USDG', stableAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', stableDecimals: 6
-     }
+      base: {
+        key: 'base', name: 'Base', chainId: 8453, chainIdHex: '0x2105',
+        rpcUrl: 'https://mainnet.base.org', explorer: 'https://basescan.org/address/',
+        nativeSymbol: 'ETH', stableSymbol: 'USDC', stableAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', stableDecimals: 6,
+        chainParams: { chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }
+      },
+      robinhood: {
+        key: 'robinhood', name: 'Robinhood Chain', chainId: 4663, chainIdHex: '0x1237',
+        rpcUrl: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com/address/',
+        nativeSymbol: 'ETH', stableSymbol: 'USDG', stableAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', stableDecimals: 6,
+        chainParams: { chainId: '0x1237', chainName: 'Robinhood Chain', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'], blockExplorerUrls: ['https://robinhoodchain.blockscout.com'] }
+      }
    };
    var ERC20_ABI = [
      'function transfer(address to, uint256 amount) returns (bool)',
@@ -1866,8 +1879,24 @@
      truffle:     { name: 'Royal Truffle',      mark: 'T', costUsd: 5,    growMs: 60*60*1000,   yield: 600 },
      sunflower:   { name: 'Mythic Sunflower',   mark: 'S', costUsd: 12.5, growMs: 180*60*1000,  yield: 1800 },
      dragonfruit: { name: 'Mythic Dragon Fruit',mark: 'D', costUsd: 25,   growMs: 360*60*1000,  yield: 4000 },
-     lotus:       { name: 'Cosmic Lotus',       mark: 'L', costUsd: 50,   growMs: 720*60*1000,  yield: 10000 }
-  };
+      lotus:       { name: 'Cosmic Lotus',       mark: 'L', costUsd: 50,   growMs: 720*60*1000,  yield: 10000 }
+   };
+
+   var SEED_ART = {
+     wheat: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#21452c"/><path d="M29 55C30 41 33 28 44 10" fill="none" stroke="#f2cf69" stroke-width="3" stroke-linecap="round"/><path d="M38 21c-7-1-10-4-11-9 6 0 10 3 11 9ZM35 29c-7-1-10-4-11-9 6 0 10 3 11 9ZM32 37c-6-1-9-4-10-8 5 0 9 3 10 8ZM41 17c5-3 8-6 8-11-5 1-8 4-8 11ZM37 25c5-3 8-6 8-11-5 1-8 4-8 11ZM34 34c5-2 8-5 8-10-5 1-8 4-8 10Z" fill="#f4d87c"/></svg>',
+     corn: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#274d2c"/><path d="M22 52c-2-15 0-27 9-37 10 10 12 22 8 37Z" fill="#f2c75c" stroke="#e3a63f" stroke-width="2"/><path d="M27 21 18 13c-1 15 3 25 11 31M38 22l9-10c1 15-3 25-11 32" fill="none" stroke="#8fca79" stroke-width="5" stroke-linecap="round"/><path d="M26 28h13M24 35h16M23 42h15" stroke="#d89936" stroke-width="2"/></svg>',
+     berry: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#442b46"/><path d="M32 44C29 30 34 21 43 13" fill="none" stroke="#8fc478" stroke-width="3" stroke-linecap="round"/><path d="M40 19c-8 1-12-2-14-8 7-1 12 2 14 8Z" fill="#a9d781"/><circle cx="23" cy="39" r="8" fill="#dc6a8c"/><circle cx="39" cy="42" r="9" fill="#ef86a4"/><circle cx="32" cy="29" r="8" fill="#c94e75"/><circle cx="21" cy="37" r="2" fill="#ffd3d9"/><circle cx="36" cy="39" r="2" fill="#ffd3d9"/><circle cx="30" cy="26" r="2" fill="#ffd3d9"/></svg>',
+     melon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#594429"/><path d="M13 37c6-17 23-25 39-17 5 3 7 8 7 14-11 13-31 17-46 3Z" fill="#f5b956" stroke="#e07d3e" stroke-width="2"/><path d="M21 35c8-8 18-12 30-12M27 43c8-7 15-10 24-12M18 29c7-6 14-9 21-10" fill="none" stroke="#e88d43" stroke-width="2" opacity=".85"/><path d="M47 18c5-3 8-2 10 1-4 2-7 3-10-1Z" fill="#94c878"/></svg>',
+     truffle: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#3d2d24"/><path d="M16 43c-1-12 6-20 16-22 10-2 18 5 18 16 0 10-8 16-19 16-9 0-14-4-15-10Z" fill="#aa7048" stroke="#e0a46b" stroke-width="2"/><path d="M21 37c5-5 12-8 22-7M20 44c9-4 17-5 25-3" fill="none" stroke="#7a4a32" stroke-width="3" stroke-linecap="round"/><circle cx="29" cy="33" r="2" fill="#efc18a"/><circle cx="41" cy="40" r="2" fill="#efc18a"/><circle cx="34" cy="48" r="2" fill="#efc18a"/></svg>',
+     sunflower: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#4b4124"/><g fill="#f5ca62"><circle cx="32" cy="15" r="7"/><circle cx="45" cy="22" r="7"/><circle cx="49" cy="36" r="7"/><circle cx="40" cy="48" r="7"/><circle cx="24" cy="49" r="7"/><circle cx="15" cy="37" r="7"/><circle cx="18" cy="22" r="7"/></g><circle cx="32" cy="32" r="13" fill="#714727"/><circle cx="27" cy="28" r="2" fill="#e8b65a"/><circle cx="36" cy="29" r="2" fill="#e8b65a"/><circle cx="31" cy="37" r="2" fill="#e8b65a"/></svg>',
+     dragonfruit: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#4a2540"/><path d="M15 39c0-15 9-25 20-25s19 10 16 25c-3 11-12 15-22 14-9-1-14-6-14-14Z" fill="#e76d91" stroke="#f4a4b6" stroke-width="2"/><path d="M22 20 18 11c6 1 10 4 12 8M39 18l5-9c3 5 3 9 1 13M48 29l9-4c-1 6-5 9-10 10M18 31l-9-3c1 6 5 9 10 10" fill="#83bb71"/><g fill="#272d2a"><circle cx="26" cy="29" r="1.5"/><circle cx="38" cy="25" r="1.5"/><circle cx="43" cy="38" r="1.5"/><circle cx="29" cy="42" r="1.5"/></g></svg>',
+     lotus: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#332950"/><path d="M32 50C17 50 10 43 8 34c9 0 17 3 24 12 7-9 15-12 24-12-2 9-9 16-24 16Z" fill="#87b87d"/><path d="M32 45c-12-5-16-14-13-24 8 3 13 9 13 20 0-11 5-17 13-20 3 10-1 19-13 24Z" fill="#e58ab0" stroke="#f5bed2" stroke-width="2"/><path d="M32 44c-7-9-6-19 0-28 6 9 7 19 0 28Z" fill="#f2aac5"/><circle cx="32" cy="44" r="3" fill="#f4d777"/></svg>'
+   };
+
+   function seedArt(key, variant) {
+     var className = 'seed-visual' + (variant ? ' ' + variant : '');
+     return '<span class="' + className + '" aria-hidden="true">' + (SEED_ART[key] || SEED_ART.wheat) + '</span>';
+   }
 
   var DEFAULT_RECIPES = [
      { from: 'wheat', fromQty: 10, to: 'corn', toQty: 1, name: 'Sweet Corn', mark: 'C', desc: 'Harvested Wheat -> Sweet Corn Seed' },
@@ -2185,9 +2214,9 @@
       loadout.innerHTML = Object.keys(SEED_CONFIG).map(function (key) {
         var count = Number((state.seedInventory && state.seedInventory[key]) || 0);
         totalSeeds += count;
-        return '<div class="seed-loadout-slot" title="' + SEED_CONFIG[key].name + '">' +
-          '<span class="seed-loadout-mark">' + SEED_CONFIG[key].mark + '</span>' +
-          '<span class="seed-loadout-count">x' + count + '</span>' +
+         return '<div class="seed-loadout-slot" title="' + SEED_CONFIG[key].name + '">' +
+           seedArt(key, 'compact') +
+           '<span class="seed-loadout-count">x' + count + '</span>' +
         '</div>';
       }).join('');
       var totalEl = document.getElementById('seedLoadoutCount');
@@ -2251,12 +2280,12 @@
         var cfg = SEED_CONFIG[plot.seedType] || {};
         var rem = (plot.plantedAt + (cfg.growMs || 0)) - Date.now();
         div.innerHTML =
-           '<div class="plot-icon">' + (cfg.mark || '?') + '</div>' +
+           '<div class="plot-icon">' + seedArt(plot.seedType, 'plot') + '</div>' +
           '<div class="plot-tag" data-plot-plant="' + plot.plantedAt + '" data-plot-grow="' + (cfg.growMs || 0) + '">' + fmtTime(rem) + '</div>';
       } else if (plot.state === 'ready') {
         var cfg2 = SEED_CONFIG[plot.seedType] || {};
         div.innerHTML =
-           '<div class="plot-icon">' + (cfg2.mark || '?') + '</div>' +
+           '<div class="plot-icon">' + seedArt(plot.seedType, 'plot') + '</div>' +
           '<div class="plot-tag">HARVEST!</div>';
       }
 
@@ -2306,7 +2335,7 @@
 
        var reusableBadge = !cfg.free ? '<span style="color:#2b6cb0; font-weight:700;">Reusable</span>' : '';
       card.innerHTML =
-         '<div class="seed-emoji">' + cfg.mark + '</div>' +
+         seedArt(key) +
         '<div class="seed-details">' +
           '<div class="seed-name-row"><span class="seed-name">' + cfg.name + '</span>' + priceHtml + '</div>' +
           '<div class="seed-meta">' +
@@ -2350,7 +2379,7 @@
       var count = harvestInv[k] || 0;
       var cfg = SEED_CONFIG[k];
       return '<span style="font-size:11px; font-weight:700; background:#fff; border:1px solid #e2d3b5; padding:3px 8px; border-radius:12px; margin:2px; display:inline-flex; align-items:center; gap:4px;">' +
-         '<span class="seed-emoji" style="width:24px; height:24px; border-radius:8px; font-size:10px;">' + cfg.mark + '</span> ' + count + ' ' + cfg.name + '</span>';
+          seedArt(k, 'compact') + ' ' + count + ' ' + cfg.name + '</span>';
     }).join(' ');
     barnBox.innerHTML =
        '<div style="font-size:11px; font-weight:800; color:var(--gold-dark); margin-bottom:6px;">HARVESTED CROPS BARN:</div>' +
@@ -2369,7 +2398,7 @@
       card.innerHTML =
         '<div class="recipe-flow">' +
           '<div class="recipe-side">' +
-             '<span class="seed-emoji">' + fromCfg.mark + '</span>' +
+             seedArt(rec.from, 'compact') +
             '<div>' +
               '<div style="font-weight:800; font-size:12px;">' + rec.fromQty + 'x Harvested ' + fromCfg.name + '</div>' +
               '<div style="font-size:10px; color:var(--ink-muted);">' + (fromCfg.free ? 'Free Crop' : '$' + fromCfg.costUsd + ' Val') + '</div>' +
@@ -2381,7 +2410,7 @@
               '<div style="font-weight:800; font-size:12px; color:var(--leaf-dark);">+' + rec.toQty + 'x ' + toCfg.name + ' Seed</div>' +
               '<div style="font-size:10px; color:var(--gold-dark); font-weight:700;">+' + toCfg.yield + ' MUSE · $' + toCfg.costUsd + '</div>' +
             '</div>' +
-             '<span class="seed-emoji">' + toCfg.mark + '</span>' +
+              seedArt(rec.to, 'compact') +
           '</div>' +
         '</div>' +
         '<div class="recipe-actions">' +
@@ -2432,7 +2461,7 @@
 
     mount.innerHTML = upgrades.map(function (u) {
       var isUnlocked = currentSize >= u.size;
-       var btnText = isUnlocked ? 'Unlocked' : 'Expand Land ($' + u.costUsd + ' USDC)';
+       var btnText = isUnlocked ? 'Unlocked' : 'Expand Land ($' + u.costUsd + ' value)';
       var disabled = isUnlocked ? 'disabled' : '';
 
        return '<div class="upgrade-card">' +
@@ -2490,6 +2519,18 @@
       };
     }
 
+    function syncPaymentDefaults() {
+      var preferred = null;
+      if (Number(walletBalances.baseUsdc) > 0) preferred = 'base:USDC';
+      else if (Number(walletBalances.robinhoodUsdg) > 0) preferred = 'robinhood:USDG';
+      else if (Number(walletBalances.baseEth) > 0) preferred = 'base:ETH';
+      else if (Number(walletBalances.robinhoodEth) > 0) preferred = 'robinhood:ETH';
+      if (!preferred) return;
+      document.querySelectorAll('.payment-select').forEach(function (select) {
+        if (!select.getAttribute('data-user-picked')) select.value = preferred;
+      });
+    }
+
     async function refreshWalletBalance() {
       if (!userWallet) return;
       walletBalances.baseEth = walletBalances.baseUsdc = walletBalances.robinhoodEth = walletBalances.robinhoodUsdg = 'Loading...';
@@ -2512,6 +2553,7 @@
       }
       if (results[0].status === 'rejected' && results[1].status === 'rejected') showBanner('Unable to load Base or Robinhood balances. Try Refresh again.', 'error');
       renderWallet();
+      syncPaymentDefaults();
     }
 
     function chainIdMatches(value, network) {
@@ -2545,16 +2587,20 @@
         }
         var privyNet = await privyProvider.request({ method: 'eth_chainId' });
         if (!chainIdMatches(privyNet, network)) {
-          var switched = false;
           if (bridge && bridge.switchChain) {
+            try { await bridge.switchChain(network.chainId); } catch (switchError) { /* Provider fallback below. */ }
+          }
+          privyNet = await privyProvider.request({ method: 'eth_chainId' });
+          if (!chainIdMatches(privyNet, network)) {
             try {
-              await bridge.switchChain(network.chainId);
-              switched = true;
+              await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: network.chainIdHex }] });
             } catch (switchError) {
-              switched = false;
+              var switchCode = switchError && (switchError.code || switchError.data && switchError.data.originalError && switchError.data.originalError.code);
+              if (Number(switchCode) !== 4902 && !String(switchError && switchError.message || '').toLowerCase().includes('unrecognized chain')) throw switchError;
+              await privyProvider.request({ method: 'wallet_addEthereumChain', params: [network.chainParams] });
+              await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: network.chainIdHex }] });
             }
           }
-          if (!switched) await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: network.chainIdHex }] });
         }
         ethersProvider = new ethers.BrowserProvider(privyProvider);
         ethersSigner = await ethersProvider.getSigner();
@@ -2665,7 +2711,7 @@
       optsHtml +=
         '<div class="modal-seed-opt ' + (canPlant ? '' : 'disabled') + '" data-seed="' + k + '" data-can="' + canPlant + '">' +
           '<div style="display:flex; align-items:center; gap:8px;">' +
-             '<span class="seed-emoji" style="width:28px; height:28px; border-radius:9px; font-size:11px;">' + cfg.mark + '</span>' +
+             seedArt(k, 'compact') +
             '<div>' +
               '<div style="font-weight:800; font-size:12px;">' + cfg.name + ' (Seeds: ' + qty + ')</div>' +
               '<div style="font-size:10px; color:var(--ink-muted);">Takes ' + fmtGrowDuration(cfg.growMs) + ' · Yields +' + cfg.yield + ' MUSE</div>' +
@@ -2781,25 +2827,50 @@
     return price;
   }
 
+  async function requirePaymentFunds(network, asset, amountText) {
+    if (!userWallet) throw new Error('Connect your Privy wallet before paying.');
+    var provider = getReadProvider(network.key);
+    var nativeBalance = await provider.getBalance(userWallet);
+    if (nativeBalance === 0n) throw new Error('Add ETH on ' + network.name + ' first. ETH is required for network gas.');
+    if (asset === network.stableSymbol) {
+      var stable = new ethers.Contract(network.stableAddress, ERC20_ABI, provider);
+      var stableBalance = await stable.balanceOf(userWallet);
+      var requiredStable = ethers.parseUnits(amountText, network.stableDecimals);
+      if (stableBalance < requiredStable) {
+        throw new Error('Not enough ' + asset + ' on ' + network.name + '. Add at least ' + amountText + ' ' + asset + '.');
+      }
+    } else {
+      var requiredEth = ethers.parseEther(amountText);
+      if (nativeBalance < requiredEth) {
+        throw new Error('Not enough ETH on ' + network.name + ' for this purchase and gas.');
+      }
+    }
+  }
+
   async function payWithPrivy(costUsd, paymentKey) {
     var parts = String(paymentKey || 'robinhood:USDG').split(':');
     var networkKey = parts[0];
     var asset = parts[1];
     var network = NETWORK_CONFIG[networkKey];
     if (!network || (asset !== network.stableSymbol && asset !== network.nativeSymbol)) throw new Error('Unsupported payment asset.');
-    var signer = await switchToNetwork(networkKey);
-    if (!signer) throw new Error('Privy wallet signer is not available.');
+    if (!Number.isFinite(Number(costUsd)) || Number(costUsd) <= 0) throw new Error('This item has an invalid price.');
     var amountText;
     var tx;
     if (asset === network.stableSymbol) {
       amountText = Number(costUsd).toFixed(network.stableDecimals);
-      var stable = new ethers.Contract(network.stableAddress, ERC20_ABI, signer);
-      tx = await stable.transfer(CREATOR_WALLET, ethers.parseUnits(amountText, network.stableDecimals));
     } else {
       var ethPrice = await getEthUsdPrice();
       var ethAmount = Number(costUsd) / ethPrice;
       amountText = ethAmount.toFixed(8);
       if (Number(amountText) <= 0) throw new Error('ETH amount is below the supported precision.');
+    }
+    await requirePaymentFunds(network, asset, amountText);
+    var signer = await switchToNetwork(networkKey);
+    if (!signer) throw new Error('Privy wallet signer is not available.');
+    if (asset === network.stableSymbol) {
+      var stable = new ethers.Contract(network.stableAddress, ERC20_ABI, signer);
+      tx = await stable.transfer(CREATOR_WALLET, ethers.parseUnits(amountText, network.stableDecimals));
+    } else {
       tx = await signer.sendTransaction({ to: CREATOR_WALLET, value: ethers.parseEther(amountText) });
     }
     showBanner('Payment submitted: ' + amountText + ' ' + asset + ' on ' + network.name + '.', 'info');
@@ -2909,6 +2980,9 @@
   // TABS & UI NAVIGATION
   // ==========================================
   function setupTabs() {
+    document.addEventListener('change', function (event) {
+      if (event.target && event.target.classList.contains('payment-select')) event.target.setAttribute('data-user-picked', 'true');
+    });
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });

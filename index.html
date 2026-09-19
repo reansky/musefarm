@@ -2269,18 +2269,38 @@
     async function switchToBaseNetwork() {
       if (authType === 'privy') {
         var bridge = window.__musefarmPrivyBridge;
-        var privyProvider = bridge && bridge.getEthereumProvider
-          ? await bridge.getEthereumProvider()
-          : (privyWallet && typeof privyWallet.getEthereumProvider === 'function'
-            ? await privyWallet.getEthereumProvider()
-            : null);
+        var privyProvider = null;
+        if (bridge && bridge.getEthereumProvider) {
+          try {
+            privyProvider = await bridge.getEthereumProvider();
+          } catch (bridgeError) {
+            privyProvider = null;
+          }
+        }
+        if (!privyProvider && privyWallet && typeof privyWallet.getEthereumProvider === 'function') {
+          privyProvider = await privyWallet.getEthereumProvider();
+        }
+        if (!privyProvider && privyWallet && typeof privyWallet.getProvider === 'function') {
+          privyProvider = await privyWallet.getProvider();
+        }
+        if (!privyProvider && privyWallet && privyWallet.provider && typeof privyWallet.provider.request === 'function') {
+          privyProvider = privyWallet.provider;
+        }
         if (!privyProvider || typeof privyProvider.request !== 'function') {
           throw new Error('Privy embedded wallet provider is unavailable. Please reload the wallet session.');
         }
         var privyNet = String(await privyProvider.request({ method: 'eth_chainId' })).toLowerCase();
         if (privyNet !== BASE_CHAIN_ID.toLowerCase()) {
-          if (bridge && bridge.switchChain) await bridge.switchChain(8453);
-          else await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+          var switched = false;
+          if (bridge && bridge.switchChain) {
+            try {
+              await bridge.switchChain(8453);
+              switched = true;
+            } catch (switchError) {
+              switched = false;
+            }
+          }
+          if (!switched) await privyProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
         }
         ethersProvider = new ethers.BrowserProvider(privyProvider);
         ethersSigner = await ethersProvider.getSigner();

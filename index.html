@@ -1474,6 +1474,10 @@
     ethersSigner = null;
     state = null;
     walletBalances = { native: '--', usdc: '--' };
+    var walletLabel = document.getElementById('walletLabel');
+    if (walletLabel) walletLabel.textContent = 'Connect wallet';
+    var syncEl = document.getElementById('lastSyncTime');
+    if (syncEl) syncEl.textContent = 'LIVE';
     renderWallet();
   }
 

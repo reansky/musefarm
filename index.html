@@ -61,7 +61,7 @@
     box-sizing: border-box; width: 100%;
   }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .brand .logo { font-size: 32px; filter: drop-shadow(1px 2px 2px rgba(183,121,31,0.3)); line-height: 1; flex-shrink: 0; }
+  .brand .logo { font-size: 15px; font-weight: 950; letter-spacing: 1.8px; color: var(--gold-dark); filter: drop-shadow(1px 2px 2px rgba(183,121,31,0.3)); line-height: 1; flex-shrink: 0; }
   .brand-meta { display: flex; flex-direction: column; gap: 3px; }
   .brand-title-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .brand h1 {
@@ -133,8 +133,29 @@
   .farmer-avatar-frame .fallback { font-size: 52px; }
 
   .farmer-details-wrap { width: 100%; box-sizing: border-box; }
+  .farmer-name { font-weight: 950; font-size: 18px; line-height: 1.1; margin-bottom: 3px; color: var(--ink); }
   .farmer-title { font-weight: 900; font-size: 15px; margin-bottom: 2px; color: var(--ink); }
   .farmer-rank { font-size: 11px; font-weight: 700; color: var(--gold-dark); margin-bottom: 10px; }
+  .profile-heading-actions { display: flex; align-items: center; gap: 8px; }
+  .profile-edit-btn {
+    border: 1px solid rgba(230,191,109,.34); border-radius: 9px; padding: 6px 9px;
+    background: rgba(230,191,109,.12); color: var(--gold-dark); font-size: 10px; font-weight: 900;
+    cursor: pointer; text-transform: uppercase; letter-spacing: .7px;
+  }
+  .profile-edit-btn:hover { background: rgba(230,191,109,.22); transform: translateY(-1px); }
+  .farmer-bio { font-size: 10px; line-height: 1.45; color: var(--ink-muted); margin: 0 0 10px; }
+  .profile-role-chip {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; margin-bottom: 10px;
+    border: 1px solid rgba(141,189,121,.25); border-radius: 999px; background: rgba(141,189,121,.1);
+    color: var(--leaf-dark); font-size: 9px; font-weight: 900; letter-spacing: .7px; text-transform: uppercase;
+  }
+  .profile-role-chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--leaf); box-shadow: 0 0 8px rgba(132,185,121,.8); }
+  .seed-loadout { margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--card-border); width: 100%; }
+  .seed-loadout-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 9px; font-weight: 900; color: var(--ink-muted); letter-spacing: 1px; text-transform: uppercase; }
+  .seed-loadout-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+  .seed-loadout-slot { min-width: 0; padding: 6px 3px; border: 1px solid var(--card-border); border-radius: 9px; background: rgba(141,189,121,.06); text-align: center; }
+  .seed-loadout-mark { display: block; color: var(--gold-dark); font-size: 11px; font-weight: 950; }
+  .seed-loadout-count { display: block; margin-top: 2px; color: var(--ink-muted); font-size: 9px; font-family: monospace; }
 
   .farmer-bars-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; }
   .bar-container { width: 100%; }
@@ -247,6 +268,10 @@
 
   /* Seed Shop */
   .shop-scroll { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; padding-right: 2px; }
+  .shop-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+  .shop-kicker { color: var(--gold-dark); font-size: 9px; font-weight: 950; letter-spacing: 1.35px; text-transform: uppercase; }
+  .shop-title { color: var(--ink); font-size: 16px; font-weight: 950; letter-spacing: -.3px; margin-top: 2px; }
+  .shop-count { border: 1px solid var(--card-border); border-radius: 999px; padding: 5px 8px; color: var(--ink-muted); font-size: 10px; font-weight: 900; white-space: nowrap; }
   .seed-item {
     display: flex; align-items: center; gap: 10px; background: #fff;
     border: 1.5px solid var(--card-border); border-radius: var(--radius-md);
@@ -260,6 +285,8 @@
     font-size: 13px; font-weight: 950; letter-spacing: .5px; line-height: 1; flex-shrink: 0;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
   }
+  .seed-item .seed-emoji { position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 5px 12px rgba(30,75,44,.13); }
+  .seed-item .seed-emoji::after { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(255,255,255,.28); border-radius: 8px; pointer-events: none; }
   .seed-details { flex: 1; min-width: 0; }
   .seed-name-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
   .seed-name { font-weight: 800; font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -290,6 +317,22 @@
   .upgrade-payment-controls { width: 100%; }
   .upgrade-payment-controls .payment-select { flex: 1; }
   .upgrade-payment-controls .upgrade-btn { width: auto; flex: 1; }
+  .field-quest {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 10px 12px;
+    border: 1px solid rgba(230,191,109,.25); border-radius: 14px; background: linear-gradient(105deg, rgba(230,191,109,.1), rgba(132,185,121,.07));
+  }
+  .field-quest-copy { min-width: 0; }
+  .field-quest-label { color: var(--gold-dark); font-size: 9px; font-weight: 950; letter-spacing: 1.1px; }
+  .field-quest-title { color: var(--ink); font-size: 11px; font-weight: 900; margin-top: 3px; }
+  .field-quest-sub { color: var(--ink-muted); font-size: 10px; margin-top: 2px; }
+  .field-quest-progress { min-width: 50px; color: var(--gold-dark); font-size: 13px; font-weight: 950; text-align: right; }
+  .profile-form { display: grid; gap: 7px; }
+  .profile-form label { color: var(--premium-muted); font-size: 10px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; }
+  .profile-form input, .profile-form textarea, .profile-form select { width: 100%; border: 1px solid var(--premium-line); border-radius: 9px; background: rgba(3,14,9,.42); color: var(--premium-ink); padding: 9px 10px; font: inherit; font-size: 12px; outline: none; }
+  .profile-form textarea { min-height: 72px; resize: vertical; }
+  .profile-form input:focus, .profile-form textarea:focus, .profile-form select:focus { border-color: rgba(230,191,109,.62); }
+  .profile-form-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .profile-form-actions > * { flex: 1; }
 
   /* Seed Upgrade / Synthesis Cards */
   .recipe-card {
@@ -570,6 +613,7 @@
       flex: 1;
       min-width: 0;
     }
+    .farmer-name { font-size: 16px; }
     .farmer-title { font-size: 14px; }
     .farmer-rank { font-size: 11px; margin-bottom: 6px; }
     .farmer-bars-grid { gap: 6px; }
@@ -805,7 +849,7 @@
     filter: blur(8px);
   }
   .brand, .stats { position: relative; z-index: 1; }
-  .brand .logo { font-size: 38px; filter: drop-shadow(0 7px 12px rgba(46, 119, 71, 0.28)); animation: logoSway 4s ease-in-out infinite; }
+  .brand .logo { font-size: 15px; font-weight: 950; letter-spacing: 1.8px; filter: drop-shadow(0 7px 12px rgba(46, 119, 71, 0.28)); animation: logoSway 4s ease-in-out infinite; }
   .brand h1 {
     font-size: 24px;
     letter-spacing: 1.2px;
@@ -842,6 +886,7 @@
     box-shadow: 0 12px 28px rgba(42, 96, 55, 0.2), 0 0 0 7px rgba(141, 195, 132, 0.12);
   }
   .farmer-avatar-frame:hover { transform: translateY(-5px) rotate(-1deg); }
+  .farmer-name { color: #164c30; }
   .farmer-title { color: #164c30; font-size: 16px; }
   .farmer-rank { color: #aa721c; }
   .progress-track { height: 10px; background: rgba(173, 204, 162, 0.32); border-color: rgba(91, 144, 82, 0.22); }
@@ -993,7 +1038,7 @@
   @media (max-width: 767px) {
     #app { padding: 10px 8px 24px; gap: 12px; }
     .topbar { padding: 14px 12px; gap: 12px; }
-    .brand .logo { font-size: 34px; }
+    .brand .logo { font-size: 14px; letter-spacing: 1.3px; }
     .brand h1 { font-size: 22px; }
     .stats { gap: 6px; }
     .stat-chip { min-width: 0; padding: 7px 5px; font-size: 10px; }
@@ -1128,7 +1173,8 @@
   .card-title { color: #d5e4bf; font-size: 12px; letter-spacing: 1.5px; }
   .farmer-card { background: linear-gradient(170deg, rgba(17, 43, 29, 0.98), rgba(8, 24, 16, 0.96)) !important; }
   .farmer-avatar-frame { border: 1px solid rgba(221, 202, 148, 0.45); box-shadow: 0 18px 36px rgba(0,0,0,0.28), 0 0 0 7px rgba(141,189,121,0.07); }
-  .farmer-title { color: #ecf1d7; }
+  .farmer-name { color: #ecf1d7; }
+  .farmer-title { color: #d6e7c5; }
   .farmer-rank, .seed-owned, .recipe-owned-tag .highlight { color: var(--premium-gold) !important; }
   .bar-header { color: var(--premium-muted); }
   .progress-track { background: rgba(188, 214, 170, 0.12); border-color: rgba(188, 214, 170, 0.13); }
@@ -1216,7 +1262,7 @@
   .signin-orbit::before { inset: 23px; }
   .signin-orbit::after { inset: 50px; }
   .signin-orbit span { position: absolute; right: 12px; top: 23px; color: #f1cc78; font-size: 16px; }
-  .signin-mark { font-size: 70px; line-height: 1; margin-top: auto; margin-bottom: 22px; filter: drop-shadow(0 18px 24px rgba(0,0,0,0.26)); }
+  .signin-mark { font-size: clamp(24px, 4vw, 42px); font-weight: 950; letter-spacing: 4px; line-height: 1; margin-top: auto; margin-bottom: 22px; color: #f4f2dc; filter: drop-shadow(0 18px 24px rgba(0,0,0,0.26)); }
   .signin-showcase-copy { max-width: 530px; }
   .signin-kicker { color: #e5bf70; font-size: 11px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; margin-bottom: 13px; }
   .signin-showcase h2 { color: #f0f3df !important; font-size: clamp(40px, 5vw, 68px) !important; font-weight: 500 !important; line-height: 0.98; letter-spacing: -3px; margin: 0 0 18px !important; }
@@ -1257,14 +1303,14 @@
    @media (max-width: 767px) {
     #app { padding: 10px 10px 28px; }
     .topbar { min-height: 0; padding: 14px 12px; border-radius: 18px; }
-    .brand .logo { font-size: 32px; }
+    .brand .logo { font-size: 14px; letter-spacing: 1.3px; }
     .brand h1 { font-size: 21px; }
     .signin-panel { display: flex; flex-direction: column; min-height: 0; margin-top: 8px; border-radius: 22px; }
      #signinGate[style*="display: grid"] { display: flex !important; }
      .signin-showcase { min-height: 390px; padding: 23px 22px 25px; }
      .signin-hero-video { opacity: 0.58; }
     .signin-orbit { width: 134px; height: 134px; right: 7%; top: 19%; }
-    .signin-mark { font-size: 54px; margin-top: 70px; margin-bottom: 16px; }
+    .signin-mark { font-size: 24px; letter-spacing: 3px; margin-top: 70px; margin-bottom: 16px; }
     .signin-showcase h2 { font-size: 39px !important; letter-spacing: -2px; }
     .signin-showcase-copy p { font-size: 12px; line-height: 1.55; max-width: 320px; }
     .signin-showcase-footer { gap: 8px; margin-top: 22px; }
@@ -1295,7 +1341,7 @@
   <!-- Symmetrical Top Bar -->
   <div class="topbar" id="topbar" style="display:none;">
     <div class="brand">
-      <span class="logo">MF</span>
+      <span class="logo">MUSEFARM</span>
       <div class="brand-meta">
         <div class="brand-title-wrap">
           <h1>MUSEFARM</h1>
@@ -1325,7 +1371,7 @@
            <span class="signin-live"><span></span> LIVE ON TWO CHAINS</span>
         </div>
         <div class="signin-orbit" aria-hidden="true"></div>
-        <div class="signin-mark" aria-hidden="true">MF</div>
+        <div class="signin-mark" aria-hidden="true">MUSEFARM</div>
         <div class="signin-showcase-copy">
           <div class="signin-kicker">Harvest Moon field operations</div>
           <h2>Grow something<br><em>worth keeping.</em></h2>
@@ -1372,9 +1418,12 @@
        </div>
        <!-- Farmer Profile Card -->
       <div class="card farmer-card">
-        <div class="card-title">
-          <span>Farmer Profile</span>
-          <span style="font-size:10px; color:var(--ink-muted);" id="lastSyncTime">LIVE</span>
+         <div class="card-title">
+           <span>Player Profile</span>
+           <div class="profile-heading-actions">
+             <button class="profile-edit-btn" id="editProfileBtn" type="button">Edit Profile</button>
+             <span style="font-size:10px; color:var(--ink-muted);" id="lastSyncTime">LIVE</span>
+           </div>
         </div>
 
         <div class="farmer-body">
@@ -1387,8 +1436,11 @@
           </div>
 
           <div class="farmer-details-wrap">
-            <div class="farmer-title" id="farmerTitle">Master Harvester</div>
-            <div class="farmer-rank" id="farmerSubrank">Level 1 Harvester</div>
+             <div class="farmer-name" id="farmerDisplayName">Field Runner</div>
+             <div class="farmer-title" id="farmerTitle">Novice Harvester</div>
+             <div class="farmer-rank" id="farmerSubrank">Level 1 Harvester</div>
+             <div class="profile-role-chip" id="farmerRole">Field Scout</div>
+             <div class="farmer-bio" id="farmerBio">Building a field worth keeping.</div>
 
             <div class="farmer-bars-grid">
               <div class="bar-container">
@@ -1411,10 +1463,14 @@
                   <div class="progress-fill gold" id="harvestProgress" style="width:0%;"></div>
                 </div>
                 <div class="meta-sub" id="nextLevelEta">100 to Lv 2</div>
-              </div>
-            </div>
-          </div>
-        </div>
+               </div>
+             </div>
+             <div class="seed-loadout">
+               <div class="seed-loadout-title"><span>Seed Loadout</span><span id="seedLoadoutCount">0 total</span></div>
+               <div class="seed-loadout-list" id="seedLoadoutList"></div>
+             </div>
+           </div>
+         </div>
       </div>
 
        <!-- Center Column: Farm Grid -->
@@ -1431,10 +1487,18 @@
              <button id="quickUpgradeBtn" style="background:#fefcbf; border:1px solid #faf089; border-radius:12px; padding:3px 10px; font-size:11px; font-weight:800; color:#744210; cursor:pointer;">Land Upgrade</button>
           </div>
           <div class="farm-subtitle-row">
-            <span style="color:var(--leaf);">Tap plot to Plant or Harvest</span>
-             <span style="color:var(--ink-muted); font-size:10px;">Local Farm State</span>
-          </div>
-        </div>
+             <span style="color:var(--leaf);">Tap plot to Plant or Harvest</span>
+              <span style="color:var(--ink-muted); font-size:10px;">Local Farm State</span>
+           </div>
+           <div class="field-quest">
+             <div class="field-quest-copy">
+               <div class="field-quest-label">FIELD QUEST // TODAY</div>
+               <div class="field-quest-title">Collect your daily Wheat seeds</div>
+               <div class="field-quest-sub">Keep the farm moving and unlock your next upgrade.</div>
+             </div>
+             <div class="field-quest-progress" id="fieldQuestProgress">0/10</div>
+           </div>
+         </div>
 
         <div id="noticeBanner"></div>
         <div class="grid-wrapper">
@@ -1510,10 +1574,14 @@
          </div>
 
          <!-- Shop Tab -->
-        <div id="tabShop">
-          <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
-              Free Wheat is limited daily. Premium seeds are reusable and can be paid with Robinhood USDG or ETH, or Base USDC or ETH. Payments go directly from Privy to the creator wallet.
-          </div>
+         <div id="tabShop">
+           <div class="shop-header">
+             <div><div class="shop-kicker">Field Market // Loadout</div><div class="shop-title">Seed Shop</div></div>
+             <span class="shop-count" id="seedShopCount">8 seed types</span>
+           </div>
+           <div style="font-size:11px; color:var(--ink-muted); margin-bottom:8px;">
+               Free Wheat is limited daily. Premium seeds stay in your loadout and can be paid with Robinhood USDG or ETH, or Base USDC or ETH. Payments go directly from Privy to the creator wallet.
+           </div>
           <div class="shop-scroll" id="seedShopList"></div>
         </div>
 
@@ -1907,6 +1975,23 @@
     return 'Novice Harvester';
   }
 
+  var PROFILE_DEFAULTS = {
+    name: 'Field Runner',
+    bio: 'Building a field worth keeping.',
+    role: 'Field Scout'
+  };
+
+  function ensureProfile(s) {
+    if (!s.profile || typeof s.profile !== 'object') s.profile = {};
+    if (!s.profile.name) s.profile.name = PROFILE_DEFAULTS.name;
+    if (!s.profile.bio) s.profile.bio = PROFILE_DEFAULTS.bio;
+    if (!s.profile.role) s.profile.role = PROFILE_DEFAULTS.role;
+    s.profile.name = String(s.profile.name).slice(0, 28);
+    s.profile.bio = String(s.profile.bio).slice(0, 90);
+    s.profile.role = String(s.profile.role).slice(0, 24);
+    return s;
+  }
+
   // ==========================================
    // LOCAL FARM STATE ENGINE
    // ==========================================
@@ -2040,13 +2125,17 @@
       });
     }
 
+    ensureProfile(s);
+
     // Safe inventories
     if (!s.seedInventory) s.seedInventory = {};
     if (!s.harvestInventory) s.harvestInventory = {};
+    var inventoryKeys = Object.keys(s.seedInventory);
     Object.keys(SEED_CONFIG).forEach(function (k) {
       if (typeof s.seedInventory[k] !== 'number') s.seedInventory[k] = 0;
       if (typeof s.harvestInventory[k] !== 'number') s.harvestInventory[k] = 0;
     });
+    if (!inventoryKeys.length && !s.totalHarvested && s.plots.every(function (plot) { return plot.state === 'empty'; })) s.seedInventory.wheat = 3;
 
     return s;
   }
@@ -2061,8 +2150,12 @@
     document.getElementById('staminaPoints').textContent = state.stamina;
     document.getElementById('staminaMax').textContent = MAX_STAMINA;
 
+    var profile = ensureProfile(state).profile;
+    document.getElementById('farmerDisplayName').textContent = profile.name;
     document.getElementById('farmerTitle').textContent = getRankName(state.level);
     document.getElementById('farmerSubrank').textContent = 'Level ' + state.level + ' · ' + state.totalHarvested + ' Total Harvested';
+    document.getElementById('farmerRole').textContent = profile.role;
+    document.getElementById('farmerBio').textContent = profile.bio;
     document.getElementById('staminaHeader').textContent = state.stamina + '/' + MAX_STAMINA;
     document.getElementById('staminaProgress').style.width = Math.round((state.stamina / MAX_STAMINA) * 100) + '%';
 
@@ -2080,6 +2173,23 @@
     } else {
       document.getElementById('staminaCountdown').textContent = 'Full Stamina';
     }
+
+    var loadout = document.getElementById('seedLoadoutList');
+    if (loadout) {
+      var totalSeeds = 0;
+      loadout.innerHTML = Object.keys(SEED_CONFIG).map(function (key) {
+        var count = Number((state.seedInventory && state.seedInventory[key]) || 0);
+        totalSeeds += count;
+        return '<div class="seed-loadout-slot" title="' + SEED_CONFIG[key].name + '">' +
+          '<span class="seed-loadout-mark">' + SEED_CONFIG[key].mark + '</span>' +
+          '<span class="seed-loadout-count">x' + count + '</span>' +
+        '</div>';
+      }).join('');
+      var totalEl = document.getElementById('seedLoadoutCount');
+      if (totalEl) totalEl.textContent = totalSeeds + ' total';
+    }
+    var questProgress = document.getElementById('fieldQuestProgress');
+    if (questProgress) questProgress.textContent = (state.freeSeedClaimedToday || 0) + '/' + DAILY_FREE_SEED_CAP;
 
     if (state.walletAddress) {
        var badge = authType === 'privy' ? 'Privy · ' : '';
@@ -2154,6 +2264,8 @@
     var list = document.getElementById('seedShopList');
     if (!list || !state) return;
     list.innerHTML = '';
+    var countEl = document.getElementById('seedShopCount');
+    if (countEl) countEl.textContent = Object.keys(SEED_CONFIG).length + ' seed types';
 
     var freeClaimed = state.freeSeedClaimedToday || 0;
     var freeRemaining = Math.max(0, DAILY_FREE_SEED_CAP - freeClaimed);
@@ -2164,9 +2276,9 @@
       var card = document.createElement('div');
       card.className = 'seed-item';
 
-      var priceHtml = cfg.free
-        ? '<span class="seed-price-tag free">FREE (' + freeRemaining + '/10 REMAINING)</span>'
-        : '<span class="seed-price-tag paid">$' + cfg.costUsd + ' USDC</span>';
+       var priceHtml = cfg.free
+         ? '<span class="seed-price-tag free">FREE (' + freeRemaining + '/10 REMAINING)</span>'
+        : '<span class="seed-price-tag paid">$' + cfg.costUsd + ' VALUE</span>';
 
       var btnHtml = '';
       if (cfg.free) {
@@ -2222,7 +2334,7 @@
   function renderSynthesis() {
     var list = document.getElementById('synthesisList');
     if (!list || !state) return;
-    list.innerHTML = '';
+     list.innerHTML = '';
     var recipes = DEFAULT_RECIPES;
     var harvestInv = state.harvestInventory || {};
 
@@ -2852,15 +2964,67 @@
      var withdrawBtn = document.getElementById('withdrawBtn');
      if (withdrawBtn) withdrawBtn.addEventListener('click', withdrawFromWallet);
 
-    var avatarFrame = document.getElementById('farmerAvatarFrame');
-    if (avatarFrame) {
-      avatarFrame.addEventListener('click', openAvatarLightbox);
-    }
+     var avatarFrame = document.getElementById('farmerAvatarFrame');
+     if (avatarFrame) {
+       avatarFrame.addEventListener('click', openAvatarLightbox);
+     }
+     var editProfileBtn = document.getElementById('editProfileBtn');
+     if (editProfileBtn) editProfileBtn.addEventListener('click', openProfileEditor);
 
     var walletPill = document.getElementById('walletLabel');
     if (walletPill) {
       walletPill.addEventListener('click', openWalletDetailsModal);
     }
+  }
+
+  function openProfileEditor() {
+    if (!state) return;
+    var profile = ensureProfile(state).profile;
+    var mount = document.getElementById('plantModalMount');
+    mount.innerHTML =
+      '<div class="modal-backdrop" id="profileEditorBackdrop">' +
+        '<div class="auth-modal-card">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;">' +
+            '<div><div style="font-size:10px; color:var(--gold-dark); font-weight:950; letter-spacing:1.2px;">PLAYER LOADOUT</div><h3 style="margin-top:4px;">Edit Profile</h3></div>' +
+            '<span class="auth-btn-badge active">LOCAL SAVE</span>' +
+          '</div>' +
+          '<div class="profile-form">' +
+            '<label for="profileNameInput">Farmer name</label>' +
+            '<input id="profileNameInput" maxlength="28" autocomplete="nickname" placeholder="Field Runner" />' +
+            '<label for="profileRoleInput">Field role</label>' +
+            '<select id="profileRoleInput">' +
+              '<option>Field Scout</option>' +
+              '<option>Crop Tactician</option>' +
+              '<option>Harvest Hunter</option>' +
+              '<option>Estate Builder</option>' +
+            '</select>' +
+            '<label for="profileBioInput">Bio</label>' +
+            '<textarea id="profileBioInput" maxlength="90" placeholder="Building a field worth keeping."></textarea>' +
+            '<div class="profile-form-actions">' +
+              '<button class="modal-close" id="profileCancelBtn" type="button">Cancel</button>' +
+              '<button class="buy-btn" id="profileSaveBtn" type="button">Save Profile</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('profileNameInput').value = profile.name;
+    document.getElementById('profileRoleInput').value = profile.role;
+    document.getElementById('profileBioInput').value = profile.bio;
+    function closeEditor() { mount.innerHTML = ''; }
+    document.getElementById('profileCancelBtn').addEventListener('click', closeEditor);
+    document.getElementById('profileEditorBackdrop').addEventListener('click', function (event) {
+      if (event.target.id === 'profileEditorBackdrop') closeEditor();
+    });
+    document.getElementById('profileSaveBtn').addEventListener('click', function () {
+      profile.name = document.getElementById('profileNameInput').value.trim() || PROFILE_DEFAULTS.name;
+      profile.role = document.getElementById('profileRoleInput').value || PROFILE_DEFAULTS.role;
+      profile.bio = document.getElementById('profileBioInput').value.trim() || PROFILE_DEFAULTS.bio;
+      persistState();
+      renderProfile();
+      closeEditor();
+      showBanner('Profile saved to this Privy wallet.', 'info');
+    });
   }
 
   function openAvatarLightbox() {
@@ -2958,7 +3122,12 @@
         plots: Array.from({ length: 9 }, function (_, index) {
           return { index: index, state: 'empty', seedType: '', plantedAt: 0 };
         }),
-        seedInventory: {},
+         profile: {
+           name: PROFILE_DEFAULTS.name,
+           bio: PROFILE_DEFAULTS.bio,
+           role: PROFILE_DEFAULTS.role
+         },
+         seedInventory: { wheat: 3 },
         harvestInventory: {},
         totalHarvested: 0,
         createdAt: now,

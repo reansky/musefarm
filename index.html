@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>MUSEFARM</title>
+<link rel="preconnect" href="https://esm.sh" crossorigin />
 <style>
   :root {
     --soil-dark: #241710;
@@ -1337,17 +1338,34 @@
   .social-login-btn { min-height: 58px; justify-content: flex-start; padding: 0 16px; background: rgba(24, 53, 35, 0.72) !important; color: #e6efe1; border: 1px solid rgba(193,224,175,0.18) !important; box-shadow: none; }
   .social-login-btn:hover { background: rgba(41, 80, 48, 0.9) !important; border-color: rgba(230,191,109,0.52) !important; box-shadow: 0 10px 28px rgba(0,0,0,0.18); }
   .social-login-btn .social-mark { width: 26px; }
-  .social-login-btn .provider-arrow { margin-left: auto; color: #9dbb8c; font-size: 16px; }
+   .social-login-btn .provider-arrow { display: none; }
   .signin-trust-row { display: flex; flex-wrap: wrap; gap: 8px 13px; margin: 18px 0 15px; color: #88a58d; font-size: 9px; letter-spacing: 0.2px; }
   .signin-note { color: #809b87 !important; font-size: 10px !important; line-height: 1.55; margin: 0 !important; }
   .signin-legal { color: #5d7b67; font-size: 9px; margin-top: 30px; }
   .privy-status-panel { margin: 16px 0 0; padding: 15px; border: 1px solid rgba(141,189,121,0.24); border-radius: 14px; background: rgba(141,189,121,0.08); }
-  .privy-status-label { color: #9dc38c; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
-  .privy-status-address { color: #edf4e9; font-family: monospace; font-size: 11px; word-break: break-all; margin-bottom: 8px; }
-  .privy-status-balance { color: #94ae99; font-size: 10px; margin-bottom: 10px; }
-  .privy-status-balance strong { color: #e6c578; }
-  .privy-status-panel a { color: #d2b16e; font-size: 10px; font-weight: 800; }
-  .privy-status-panel .modal-close { margin-top: 12px; }
+   .privy-status-label { color: #9dc38c; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
+   .privy-status-message { color: #c5d9bd; font-size: 11px; line-height: 1.5; margin-bottom: 10px; }
+   .privy-status-address { color: #edf4e9; font-family: monospace; font-size: 11px; word-break: break-all; margin-bottom: 8px; }
+   .privy-status-balance { color: #94ae99; font-size: 10px; margin-bottom: 10px; }
+   .privy-status-balance strong { color: #e6c578; }
+   .privy-status-panel a { color: #d2b16e; font-size: 10px; font-weight: 800; }
+   .privy-create-wallet-btn { width: 100%; padding: 9px 11px; border: 1px solid rgba(230,191,109,.42); border-radius: 9px; background: linear-gradient(135deg, #e4be68, #a77432); color: #241710; font-size: 11px; font-weight: 950; cursor: pointer; box-shadow: 0 7px 15px rgba(183,121,31,.2); }
+   .privy-create-wallet-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+   .privy-create-wallet-btn:disabled { cursor: wait; opacity: .62; transform: none; }
+   .privy-status-panel .modal-close { margin-top: 12px; }
+
+   /* Keep menu copy readable when a light utility surface is used. */
+   .menu-card .shop-kicker { color: #f0c873 !important; }
+   .menu-card .shop-title { color: #e4edd9 !important; }
+   .menu-card .shop-count { color: #c7d8bd !important; border-color: rgba(184,211,158,.3) !important; background: rgba(141,189,121,.1); }
+   .menu-card [style*="color:var(--ink-muted)"] { color: #b7cbb0 !important; }
+   .menu-card .wallet-form h4 { color: #dce9c9 !important; }
+   .menu-card .wallet-form label { color: #b7cbb0 !important; }
+   .menu-card .upgrade-btn { color: #241710 !important; }
+   .menu-card .upgrade-btn:disabled { color: #334b3a !important; }
+   .menu-card .claim-btn { color: #213629 !important; }
+   .menu-card #tabTreasury .treasury-header > span:first-child { color: #dce9c9 !important; }
+   .menu-card #tabLeaderboard #refreshLbBtn { color: #173b28 !important; }
 
   @media (max-width: 900px) and (min-width: 768px) {
     .signin-panel { grid-template-columns: 1fr 0.82fr; }
@@ -1444,18 +1462,20 @@
         <p id="signinMessage">Choose X or Google to create your Privy wallet.</p>
         <div class="signin-provider-label">Continue with</div>
         <div class="social-login-grid" id="socialLoginOptions">
-          <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span><span class="provider-arrow">↗</span></button>
-          <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span><span class="provider-arrow">↗</span></button>
+           <button class="social-login-btn x" id="signinX" type="button"><span class="social-mark">𝕏</span><span>Continue with X</span></button>
+           <button class="social-login-btn google" id="signinGoogle" type="button"><span class="social-mark">G</span><span>Continue with Google</span></button>
         </div>
          <div class="signin-trust-row"><span>Embedded wallet</span><span>Base</span><span>Robinhood Chain</span></div>
          <p class="signin-note">Privy creates the signer. Your address and balances appear here before you enter the field.</p>
-         <div id="privyWalletStatus" class="privy-status-panel" style="display:none;">
-           <div class="privy-status-label">PRIVY SIGNER READY</div>
-           <div id="privyWalletAddress" class="privy-status-address"></div>
-           <div class="privy-status-balance"><strong id="privyBaseEthBalance">-- ETH</strong> · <strong id="privyBaseUsdcBalance">-- USDC</strong> · <strong id="privyRobinhoodEthBalance">-- ETH</strong> · <strong id="privyRobinhoodUsdgBalance">-- USDG</strong></div>
-           <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer">View wallet activity ↗</a>
-           <button class="modal-close" id="privyLogoutBtn" type="button">Sign out</button>
-         </div>
+           <div id="privyWalletStatus" class="privy-status-panel" style="display:none;">
+            <div class="privy-status-label" id="privyWalletStatusLabel">PRIVY SIGNER READY</div>
+            <div class="privy-status-message" id="privyWalletStatusMessage">Privy is preparing your embedded wallet.</div>
+            <div id="privyWalletAddress" class="privy-status-address"></div>
+            <div class="privy-status-balance"><strong id="privyBaseEthBalance">-- ETH</strong> · <strong id="privyBaseUsdcBalance">-- USDC</strong> · <strong id="privyRobinhoodEthBalance">-- ETH</strong> · <strong id="privyRobinhoodUsdgBalance">-- USDG</strong></div>
+            <a id="privyWalletExplorer" href="#" target="_blank" rel="noreferrer">View wallet activity ↗</a>
+            <button class="privy-create-wallet-btn" id="privyCreateWalletBtn" type="button" style="display:none;">Create embedded wallet</button>
+            <button class="modal-close" id="privyLogoutBtn" type="button">Sign out</button>
+          </div>
         <button class="signin-btn" id="signinAction" style="display:none;">Continue</button>
         <div class="signin-legal">By continuing, you agree to the rhythm of the field.</div>
       </div>
@@ -1569,7 +1589,7 @@
       </div>
 
        <!-- Right Column: Tabs (Wallet / Shop / Seed Upgrade / Land Upgrade / Leaderboard / Treasury) -->
-       <div class="card">
+        <div class="card menu-card">
          <div class="tab-nav">
            <button class="tab-btn" data-tab="wallet">Wallet</button>
            <button class="tab-btn active" data-tab="shop">Seed Shop</button>
@@ -1753,14 +1773,16 @@
       function PrivyBridge() {
         var privy = Privy.usePrivy();
        var walletState = Privy.useWallets();
-       var walletCreator = Privy.useCreateWallet();
-       var createInProgress = React.useRef(false);
-       var createdWallet = React.useRef(null);
+        var walletCreator = Privy.useCreateWallet();
+        var createInProgress = React.useRef(false);
+        var walletCreationAttempted = React.useRef(false);
+        var walletCreationPromise = React.useRef(null);
+        var createdWallet = React.useRef(null);
        var latestWallet = React.useRef(null);
        var latestWalletReady = React.useRef(false);
        var latestAuthenticated = React.useRef(false);
-       latestWalletReady.current = walletState.ready;
-       latestAuthenticated.current = privy.authenticated;
+         latestWalletReady.current = walletState.ready;
+         latestAuthenticated.current = privy.authenticated;
         var oauth = Privy.useLoginWithOAuth({
           onError: function (error) {
             reportPrivyError(error);
@@ -1769,21 +1791,38 @@
 
         React.useEffect(function () {
          window.__musefarmPrivyBridge = {
-           login: function (provider) { return oauth.initOAuth({ provider: provider }); },
-           logout: privy.logout,
-           getEthereumProvider: async function () {
-             var wallet = latestWallet.current || createdWallet.current;
-             if (!wallet && latestAuthenticated.current && latestWalletReady.current && !createInProgress.current) {
-               createInProgress.current = true;
-               try {
-                 var created = await walletCreator.createWallet();
-                 wallet = created && created.wallet ? created.wallet : created;
-                 createdWallet.current = wallet;
-                 latestWallet.current = wallet;
-               } finally {
-                 createInProgress.current = false;
-               }
-             }
+            login: function (provider) { return oauth.initOAuth({ provider: provider }); },
+            logout: privy.logout,
+            createWallet: async function () {
+              if (createdWallet.current) return createdWallet.current;
+              if (walletCreationPromise.current) return walletCreationPromise.current;
+              walletCreationAttempted.current = true;
+              publishState({ ready: true, authenticated: true, user: privy.user, wallet: null, walletCreation: 'creating' });
+              walletCreationPromise.current = (async function () {
+                createInProgress.current = true;
+                try {
+                  var created = await walletCreator.createWallet();
+                  var wallet = created && created.wallet ? created.wallet : created;
+                  if (!wallet) throw new Error('Privy did not return an embedded wallet.');
+                  createdWallet.current = wallet;
+                  latestWallet.current = wallet;
+                  publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet, walletCreation: 'ready' });
+                  return wallet;
+                } catch (error) {
+                  publishState({ ready: true, authenticated: true, user: privy.user, wallet: null, walletCreation: 'error', walletError: normalizePrivyError(error) });
+                  throw error;
+                } finally {
+                  createInProgress.current = false;
+                  walletCreationPromise.current = null;
+                }
+              })();
+              return walletCreationPromise.current;
+            },
+            getEthereumProvider: async function () {
+              var wallet = latestWallet.current || createdWallet.current;
+              if (!wallet && latestAuthenticated.current && latestWalletReady.current && !createInProgress.current) {
+                wallet = await window.__musefarmPrivyBridge.createWallet();
+              }
              if (!wallet) throw new Error('Privy embedded wallet is still loading.');
              if (typeof wallet.getEthereumProvider === 'function') return wallet.getEthereumProvider();
              if (typeof wallet.getProvider === 'function') return wallet.getProvider();
@@ -1811,18 +1850,20 @@
           return function () {
             window.removeEventListener('musefarm:privy-login', onLogin);
           };
-        }, [oauth.initOAuth, privy.logout]);
+         }, [oauth.initOAuth, privy.logout, walletCreator.createWallet]);
 
         React.useEffect(function () {
           if (!privy.ready) {
             publishState({ ready: false, authenticated: false });
             return;
           }
-          if (!privy.authenticated) {
-            createInProgress.current = false;
-            createdWallet.current = null;
-            publishState({ ready: true, authenticated: false });
-            return;
+           if (!privy.authenticated) {
+             createInProgress.current = false;
+             walletCreationAttempted.current = false;
+             walletCreationPromise.current = null;
+             createdWallet.current = null;
+             publishState({ ready: true, authenticated: false });
+             return;
           }
           var embedded = (walletState.wallets || []).find(function (wallet) {
             var clientType = String(wallet.walletClientType || '').toLowerCase();
@@ -1830,20 +1871,15 @@
           });
            var wallet = embedded || createdWallet.current;
            latestWallet.current = wallet || null;
-           if (!wallet && walletState.ready && !createInProgress.current) {
-            createInProgress.current = true;
-              walletCreator.createWallet().then(function (created) {
-                var wallet = created && created.wallet ? created.wallet : created;
-                createdWallet.current = wallet;
-                latestWallet.current = wallet;
-               publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet });
-             }).catch(function (error) {
-               createdWallet.current = null;
-               reportPrivyError(error);
-             }).finally(function () {
-               createInProgress.current = false;
-            });
-            return;
+            if (!wallet && walletState.ready) {
+             publishState({ ready: true, authenticated: true, user: privy.user, wallet: null, walletCreation: createInProgress.current ? 'creating' : 'needs_creation' });
+             if (!walletCreationAttempted.current && !createInProgress.current && window.__musefarmPrivyBridge && window.__musefarmPrivyBridge.createWallet) {
+               window.__musefarmPrivyBridge.createWallet().catch(function (error) {
+                 createdWallet.current = null;
+                 reportPrivyError(error);
+               });
+             }
+             return;
           }
           if (wallet) publishState({ ready: true, authenticated: true, user: privy.user, wallet: wallet });
         }, [privy.ready, privy.authenticated, privy.user, walletState.wallets, walletState.ready, walletCreator.createWallet]);
@@ -3294,7 +3330,53 @@
       };
     }
 
-    function showPrivyWallet(detail) {
+    function showPrivyWalletPending(detail) {
+      var gate = document.getElementById('signinGate');
+      var workspace = document.getElementById('gameWorkspace');
+      var topbar = document.getElementById('topbar');
+      var title = document.getElementById('signinTitle');
+      var message = document.getElementById('signinMessage');
+      var options = document.getElementById('socialLoginOptions');
+      var note = document.querySelector('.signin-note');
+      var status = document.getElementById('privyWalletStatus');
+      var statusLabel = document.getElementById('privyWalletStatusLabel');
+      var statusMessage = document.getElementById('privyWalletStatusMessage');
+      var addressEl = document.getElementById('privyWalletAddress');
+      var explorer = document.getElementById('privyWalletExplorer');
+      var createBtn = document.getElementById('privyCreateWalletBtn');
+      var creation = detail && detail.walletCreation;
+      var errorMessage = detail && detail.walletError && detail.walletError.message;
+      if (gate) gate.style.display = 'grid';
+      if (workspace) workspace.style.display = 'none';
+      if (topbar) topbar.style.display = 'none';
+      if (title) title.textContent = 'Finish your Privy wallet';
+      if (message) message.textContent = 'Your account is signed in. Complete the embedded wallet setup before entering the field.';
+      if (options) options.style.display = 'none';
+      if (note) note.textContent = 'Your embedded signer stays controlled by Privy. No seed phrase is exposed.';
+      if (status) status.style.display = 'block';
+      if (statusLabel) statusLabel.textContent = creation === 'error' ? 'PRIVY WALLET REGISTRATION NEEDS A RETRY' : (creation === 'creating' ? 'CREATING PRIVY SIGNER' : 'PRIVY SIGNER REGISTRATION');
+      if (statusMessage) statusMessage.textContent = errorMessage || (creation === 'creating' ? 'Privy is creating your embedded wallet. Keep this tab open.' : 'Privy signed you in, but no embedded wallet was returned yet.');
+      if (addressEl) addressEl.textContent = '';
+      if (explorer) explorer.style.display = 'none';
+      if (createBtn) {
+        createBtn.style.display = 'block';
+        createBtn.disabled = creation === 'creating';
+        createBtn.textContent = creation === 'creating' ? 'Creating embedded wallet...' : 'Create embedded wallet';
+      }
+    }
+
+    async function primePrivySigner() {
+      var bridge = window.__musefarmPrivyBridge;
+      if (!bridge || !bridge.getEthereumProvider) throw new Error('Privy embedded provider is still loading.');
+      var provider = await bridge.getEthereumProvider();
+      ethersProvider = new ethers.BrowserProvider(provider);
+      ethersSigner = await ethersProvider.getSigner();
+      var signerAddress = await ethersSigner.getAddress();
+      if (userWallet && signerAddress.toLowerCase() !== userWallet.toLowerCase()) throw new Error('Privy signer address does not match the connected wallet.');
+      return signerAddress;
+    }
+
+     function showPrivyWallet(detail) {
      var gate = document.getElementById('signinGate');
      var workspace = document.getElementById('gameWorkspace');
      var title = document.getElementById('signinTitle');
@@ -3303,12 +3385,15 @@
      var note = document.querySelector('.signin-note');
      var status = document.getElementById('privyWalletStatus');
      var addressEl = document.getElementById('privyWalletAddress');
-     var explorer = document.getElementById('privyWalletExplorer');
-      var address = detail && detail.wallet && detail.wallet.address;
-      if (!address) {
-        showSigninGate('Privy signed you in, but the embedded wallet is still being created.', false);
-        return;
-      }
+       var explorer = document.getElementById('privyWalletExplorer');
+       var statusLabel = document.getElementById('privyWalletStatusLabel');
+       var statusMessage = document.getElementById('privyWalletStatusMessage');
+       var createBtn = document.getElementById('privyCreateWalletBtn');
+       var address = detail && detail.wallet && detail.wallet.address;
+       if (!address) {
+         showPrivyWalletPending(detail || {});
+         return;
+       }
      privyWallet = detail.wallet;
      userWallet = address;
      authType = 'privy';
@@ -3321,15 +3406,26 @@
       if (message) message.textContent = 'Your X/Google account now has a Privy signer ready for Base and Robinhood Chain.';
      if (options) options.style.display = 'none';
       if (note) note.textContent = 'This signer is controlled through Privy. Address and balances are visible in the field header.';
-     if (status) status.style.display = 'block';
-      if (addressEl) addressEl.textContent = address;
-       if (explorer) explorer.href = NETWORK_CONFIG.robinhood.explorer + address;
-       document.getElementById('walletLabel').textContent = 'Privy · ' + shortAddr(address);
+      if (status) status.style.display = 'block';
+       if (statusLabel) statusLabel.textContent = 'PRIVY SIGNER READY';
+       if (statusMessage) statusMessage.textContent = 'Checking the embedded signer before opening your field...';
+       if (addressEl) addressEl.textContent = address;
+        if (explorer) explorer.href = NETWORK_CONFIG.robinhood.explorer + address;
+        if (explorer) explorer.style.display = 'inline-block';
+        if (createBtn) createBtn.style.display = 'none';
+        document.getElementById('walletLabel').textContent = 'Privy · ' + shortAddr(address);
       var syncEl = document.getElementById('lastSyncTime');
       if (syncEl) syncEl.textContent = 'PRIVY WALLET READY';
-       loadLiveFarm(false);
-       refreshWalletBalance();
-   }
+        loadLiveFarm(false);
+        refreshWalletBalance();
+        primePrivySigner().then(function (signerAddress) {
+          if (addressEl) addressEl.textContent = signerAddress;
+          if (statusMessage) statusMessage.textContent = 'Embedded signer ready for Base and Robinhood transactions.';
+        }).catch(function (error) {
+          if (statusMessage) statusMessage.textContent = 'Signer check is waiting: ' + (error.message || error);
+          showBanner('Privy signer is not ready yet. Try Refresh after the wallet finishes loading.', 'error');
+        });
+    }
 
     function handlePrivyState(event) {
       var detail = event && event.detail ? event.detail : event;
@@ -3342,7 +3438,11 @@
         showSigninGate('Choose X or Google to create your Privy wallet.', true);
         return;
       }
-      showPrivyWallet(detail);
+       if (!detail.wallet) {
+         showPrivyWalletPending(detail);
+         return;
+       }
+       showPrivyWallet(detail);
     }
 
     function startPrivySignIn(provider) {
@@ -3371,7 +3471,12 @@
       var error = event && event.detail && event.detail.error;
       var message = error && error.message ? error.message : String(error || 'Privy failed to initialize.');
       setSignInButtonsDisabled(false);
-      showSigninGate('Privy could not finish login: ' + message, true);
+      var current = window.__musefarmPrivyState;
+      if (current && current.authenticated) {
+        showPrivyWalletPending({ ready: true, authenticated: true, walletCreation: 'error', walletError: { message: message } });
+      } else {
+        showSigninGate('Privy could not finish login: ' + message, true);
+      }
     }
 
     async function boot() {
@@ -3380,10 +3485,29 @@
      window.addEventListener('musefarm:privy-state', handlePrivyState);
      window.addEventListener('musefarm:privy-error', handlePrivyError);
      var signinX = document.getElementById('signinX');
-     var signinGoogle = document.getElementById('signinGoogle');
-     if (signinX) signinX.addEventListener('click', function () { startPrivySignIn('X'); });
-      if (signinGoogle) signinGoogle.addEventListener('click', function () { startPrivySignIn('Google'); });
-     var logoutBtn = document.getElementById('privyLogoutBtn');
+      var signinGoogle = document.getElementById('signinGoogle');
+      if (signinX) signinX.addEventListener('click', function () { startPrivySignIn('X'); });
+       if (signinGoogle) signinGoogle.addEventListener('click', function () { startPrivySignIn('Google'); });
+      var createWalletBtn = document.getElementById('privyCreateWalletBtn');
+      if (createWalletBtn) createWalletBtn.addEventListener('click', function () {
+        var bridge = window.__musefarmPrivyBridge;
+        var statusMessage = document.getElementById('privyWalletStatusMessage');
+        createWalletBtn.disabled = true;
+        createWalletBtn.textContent = 'Creating embedded wallet...';
+        if (statusMessage) statusMessage.textContent = 'Privy is registering your embedded signer...';
+        if (!bridge || !bridge.createWallet) {
+          createWalletBtn.disabled = false;
+          createWalletBtn.textContent = 'Retry wallet creation';
+          if (statusMessage) statusMessage.textContent = 'Privy is still loading. Please try again in a moment.';
+          return;
+        }
+        Promise.resolve(bridge.createWallet()).catch(function (error) {
+          createWalletBtn.disabled = false;
+          createWalletBtn.textContent = 'Retry wallet creation';
+          if (statusMessage) statusMessage.textContent = error.message || String(error);
+        });
+      });
+      var logoutBtn = document.getElementById('privyLogoutBtn');
      if (logoutBtn) logoutBtn.addEventListener('click', function () {
        if (window.__musefarmPrivyBridge && window.__musefarmPrivyBridge.logout) window.__musefarmPrivyBridge.logout();
      });

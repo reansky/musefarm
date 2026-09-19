@@ -11,11 +11,14 @@ Farm progress is stored locally per Privy wallet in the browser. Premium seeds a
 ## Features
 
 - X and Google sign-in through Privy.
-- Harvest Moon video hero on the login screen.
+- Harvest Moon valley HUD: wood-framed panels, tilled soil plots, and a field farmer sprite that walks to plant and harvest.
+- Realistic seed kernels in the shop; planted crops grow through sprout, grow, and ripe stages on the field.
 - Live Privy signer address and balances for Base and Robinhood Chain.
 - 3x3 farm grid with 4x4 and 5x5 land expansions.
 - Free Wheat claims, reusable premium seeds, crop harvesting, stamina regeneration, and seed synthesis.
 - Local leaderboard and reward-score tracking.
+
+Gameplay, payments, Privy login, land upgrades, and reward accounting are unchanged. This release is a visual and animation pass only.
 
 ## Configuration
 
